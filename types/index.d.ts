@@ -13,7 +13,7 @@ export { Transaction } from './transaction';
 export { TransactionBuilder } from './transaction_builder';
 export { BIP32Interface } from 'bip32';
 export { ECPairInterface, Signer, SignerAsync } from './ecpair';
-export { Network } from './networks';
+export { Network, bitcoin, bitcoinsv, litecoin, dogecoin, emercoin, dashcoin } from './networks';
 export { Payment, PaymentCreator, PaymentOpts, Stack, StackElement, } from './payments';
 export { OpCode } from './script';
 export { Input as TxInput, Output as TxOutput } from './transaction';
