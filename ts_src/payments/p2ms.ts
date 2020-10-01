@@ -49,7 +49,7 @@ export function p2ms(a: Payment, opts?: PaymentOpts): Payment {
     a,
   );
 
-  const network = a.network || BITCOIN_NETWORK;
+  const network = a.network || BITCOIN_NETWORK.mainnet;
   const o: Payment = { network };
 
   let chunks: Stack = [];

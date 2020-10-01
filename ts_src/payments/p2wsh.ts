@@ -76,7 +76,7 @@ export function p2wsh(a: Payment, opts?: PaymentOpts): Payment {
 
   let network = a.network;
   if (!network) {
-    network = (a.redeem && a.redeem.network) || BITCOIN_NETWORK;
+    network = (a.redeem && a.redeem.network) || BITCOIN_NETWORK.mainnet;
   }
 
   const o: Payment = { network };

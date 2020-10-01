@@ -10,7 +10,15 @@ interface Bip32 {
     public: number;
     private: number;
 }
-export declare const bitcoin: Network;
-export declare const regtest: Network;
-export declare const testnet: Network;
-export {};
+interface NetworkConfig {
+    mainnet: Network;
+    testnet: Network;
+    regtest?: Network;
+}
+declare const bitcoin: NetworkConfig;
+declare const litecoin: NetworkConfig;
+declare const dogecoin: NetworkConfig;
+declare const emercoin: NetworkConfig;
+declare const dashcoin: NetworkConfig;
+declare const bitcoinsv: NetworkConfig;
+export { bitcoin, litecoin, bitcoinsv, dogecoin, emercoin, dashcoin };

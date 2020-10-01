@@ -29,7 +29,7 @@ export function p2pk(a: Payment, opts?: PaymentOpts): Payment {
     return bscript.decompile(a.input!);
   }) as StackFunction;
 
-  const network = a.network || BITCOIN_NETWORK;
+  const network = a.network || BITCOIN_NETWORK.mainnet;
   const o: Payment = { name: 'p2pk', network };
 
   lazy.prop(o, 'output', () => {

@@ -44,7 +44,7 @@ const DEFAULT_OPTS: PsbtOpts = {
    * A bitcoinjs Network object. This is only used if you pass an `address`
    * parameter to addOutput. Otherwise it is not needed and can be left default.
    */
-  network: btcNetwork,
+  network: btcNetwork.mainnet,
   /**
    * When extractTransaction is called, the fee rate is checked.
    * THIS IS NOT TO BE RELIED ON.
