@@ -1,10 +1,12 @@
+import { Network } from './networks';
 import { Transaction } from './transaction';
 export declare class Block {
-    static fromBuffer(buffer: Buffer): Block;
-    static fromHex(hex: string): Block;
+    static fromBuffer(buffer: Buffer, network: Network): Block;
+    static fromHex(hex: string, network: Network): Block;
     static calculateTarget(bits: number): Buffer;
     static calculateMerkleRoot(transactions: Transaction[], forWitness?: boolean): Buffer;
     version: number;
+    blockSig?: Buffer;
     prevHash?: Buffer;
     merkleRoot?: Buffer;
     timestamp: number;

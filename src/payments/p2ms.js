@@ -42,7 +42,7 @@ function p2ms(a, opts) {
     },
     a,
   );
-  const network = a.network || networks_1.bitcoin.mainnet;
+  const network = a.network || networks_1.networkConfig.bitcoin;
   const o = { network };
   let chunks = [];
   let decoded = false;

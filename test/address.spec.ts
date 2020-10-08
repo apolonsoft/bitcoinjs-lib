@@ -8,6 +8,7 @@ const NETWORKS = Object.assign(
   {
     litecoin: {
       messagePrefix: '\x19Litecoin Signed Message:\n',
+      bech32: 'ltc',
       bip32: {
         public: 0x019da462,
         private: 0x019d9cfe,
@@ -15,12 +16,15 @@ const NETWORKS = Object.assign(
       pubKeyHash: 0x30,
       scriptHash: 0x32,
       wif: 0xb0,
+      dustThreshold: 0,
+      timeInTransaction: true,
     },
   },
-  require('../src/networks'),
+  require('../src/networks').networkConfig,
 );
 
 describe('address', () => {
+
   describe('fromBase58Check', () => {
     fixtures.standard.forEach(f => {
       if (!f.base58check) return;
@@ -48,7 +52,6 @@ describe('address', () => {
 
       it('decodes ' + f.bech32, () => {
         const actual = baddress.fromBech32(f.bech32);
-
         assert.strictEqual(actual.version, f.version);
         assert.strictEqual(actual.prefix, NETWORKS[f.network].bech32);
         assert.strictEqual(actual.data.toString('hex'), f.data);
@@ -63,6 +66,7 @@ describe('address', () => {
       });
     });
   });
+
 
   describe('fromOutputScript', () => {
     fixtures.standard.forEach(f => {
@@ -145,4 +149,5 @@ describe('address', () => {
       });
     });
   });
+
 });

@@ -1,3 +1,4 @@
+import { Network } from './networks';
 export interface Output {
     script: Buffer;
     value: number;
@@ -17,13 +18,16 @@ export declare class Transaction {
     static readonly SIGHASH_ANYONECANPAY = 128;
     static readonly ADVANCED_TRANSACTION_MARKER = 0;
     static readonly ADVANCED_TRANSACTION_FLAG = 1;
-    static fromBuffer(buffer: Buffer, _NO_STRICT?: boolean): Transaction;
-    static fromHex(hex: string): Transaction;
+    static fromBuffer(buffer: Buffer, network: Network, _NO_STRICT?: boolean): Transaction;
+    static fromHex(hex: string, network: Network): Transaction;
     static isCoinbaseHash(buffer: Buffer): boolean;
+    time: number;
     version: number;
     locktime: number;
     ins: Input[];
     outs: Output[];
+    network: Network;
+    constructor(network: Network);
     isCoinbase(): boolean;
     addInput(hash: Buffer, index: number, sequence?: number, scriptSig?: Buffer): number;
     addOutput(scriptPubKey: Buffer, value: number): number;

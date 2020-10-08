@@ -1,17 +1,17 @@
 import * as baddress from './address';
-import { reverseBuffer } from './bufferutils';
+import {reverseBuffer} from './bufferutils';
 import * as classify from './classify';
 import * as bcrypto from './crypto';
-import { Signer } from './ecpair';
+import {Signer} from './ecpair';
 import * as ECPair from './ecpair';
-import { Network } from './networks';
-import * as networks from './networks';
-import { Payment } from './payments';
+import {Network, networkConfig} from './networks';
+import {Payment} from './payments';
 import * as payments from './payments';
 import * as bscript from './script';
-import { OPS as ops } from './script';
-import { Output, Transaction } from './transaction';
+import {OPS as ops} from './script';
+import {Output, Transaction} from './transaction';
 import * as types from './types';
+
 const typeforce = require('typeforce');
 
 const SCRIPT_TYPES = classify.types;
@@ -98,16 +98,16 @@ function txIsTransaction(tx: Buffer | string | Transaction): tx is Transaction {
 }
 
 export class TransactionBuilder {
+
   static fromTransaction(
     transaction: Transaction,
-    network?: Network,
   ): TransactionBuilder {
-    const txb = new TransactionBuilder(network);
+    const txb = new TransactionBuilder(transaction.network);
 
     // Copy transaction fields
     txb.setVersion(transaction.version);
     txb.setLockTime(transaction.locktime);
-
+    txb.setTime(transaction.time);
     // Copy outputs (done first to avoid signature invalidation)
     transaction.outs.forEach(txOut => {
       txb.addOutput(txOut.script, (txOut as Output).value);
@@ -138,20 +138,20 @@ export class TransactionBuilder {
   // WARNING: maximumFeeRate is __NOT__ to be relied on,
   //          it's just another potential safety mechanism (safety in-depth)
   constructor(
-    public network: Network = networks.bitcoin.mainnet,
+    public network: Network = networkConfig.bitcoin,
     public maximumFeeRate: number = 2500,
   ) {
     this.__PREV_TX_SET = {};
     this.__INPUTS = [];
-    this.__TX = new Transaction();
+    this.__TX = new Transaction(network);
     this.__TX.version = 2;
     this.__USE_LOW_R = false;
     console.warn(
       'Deprecation Warning: TransactionBuilder will be removed in the future. ' +
-        '(v6.x.x or later) Please use the Psbt class instead. Examples of usage ' +
-        'are available in the transactions-psbt.js integration test file on our ' +
-        'Github. A high level explanation is available in the psbt.ts and psbt.js ' +
-        'files as well.',
+      '(v6.x.x or later) Please use the Psbt class instead. Examples of usage ' +
+      'are available in the transactions-psbt.js integration test file on our ' +
+      'Github. A high level explanation is available in the psbt.ts and psbt.js ' +
+      'files as well.',
     );
   }
 
@@ -162,6 +162,23 @@ export class TransactionBuilder {
     }
     this.__USE_LOW_R = setting;
     return setting;
+  }
+
+  setTime(time: number): void {
+    typeforce(types.UInt32, time);
+
+    // if any signatures exist, throw
+    if (
+      this.__INPUTS.some(input => {
+        if (!input.signatures) return false;
+
+        return input.signatures.some(s => s !== undefined);
+      })
+    ) {
+      throw new Error('No, this would invalidate signatures');
+    }
+
+    this.__TX.time = time;
   }
 
   setLockTime(locktime: number): void {
@@ -451,7 +468,7 @@ function expandInput(
 
   switch (type) {
     case SCRIPT_TYPES.P2WPKH: {
-      const { output, pubkey, signature } = payments.p2wpkh({
+      const {output, pubkey, signature} = payments.p2wpkh({
         witness: witnessStack,
       });
 
@@ -464,7 +481,7 @@ function expandInput(
     }
 
     case SCRIPT_TYPES.P2PKH: {
-      const { output, pubkey, signature } = payments.p2pkh({
+      const {output, pubkey, signature} = payments.p2pkh({
         input: scriptSig,
       });
 
@@ -477,7 +494,7 @@ function expandInput(
     }
 
     case SCRIPT_TYPES.P2PK: {
-      const { signature } = payments.p2pk({ input: scriptSig });
+      const {signature} = payments.p2pk({input: scriptSig});
 
       return {
         prevOutType: SCRIPT_TYPES.P2PK,
@@ -487,12 +504,12 @@ function expandInput(
     }
 
     case SCRIPT_TYPES.P2MS: {
-      const { m, pubkeys, signatures } = payments.p2ms(
+      const {m, pubkeys, signatures} = payments.p2ms(
         {
           input: scriptSig,
           output: scriptPubKey,
         },
-        { allowIncomplete: true },
+        {allowIncomplete: true},
       );
 
       return {
@@ -505,7 +522,7 @@ function expandInput(
   }
 
   if (type === SCRIPT_TYPES.P2SH) {
-    const { output, redeem } = payments.p2sh({
+    const {output, redeem} = payments.p2sh({
       input: scriptSig,
       witness: witnessStack,
     });
@@ -533,7 +550,7 @@ function expandInput(
   }
 
   if (type === SCRIPT_TYPES.P2WSH) {
-    const { output, redeem } = payments.p2wsh({
+    const {output, redeem} = payments.p2wsh({
       input: scriptSig,
       witness: witnessStack,
     });
@@ -617,12 +634,12 @@ function expandOutput(script: Buffer, ourPubKey?: Buffer): TxbOutput {
 
   switch (type) {
     case SCRIPT_TYPES.P2PKH: {
-      if (!ourPubKey) return { type };
+      if (!ourPubKey) return {type};
 
       // does our hash160(pubKey) match the output scripts?
-      const pkh1 = payments.p2pkh({ output: script }).hash;
+      const pkh1 = payments.p2pkh({output: script}).hash;
       const pkh2 = bcrypto.hash160(ourPubKey);
-      if (!pkh1!.equals(pkh2)) return { type };
+      if (!pkh1!.equals(pkh2)) return {type};
 
       return {
         type,
@@ -632,12 +649,12 @@ function expandOutput(script: Buffer, ourPubKey?: Buffer): TxbOutput {
     }
 
     case SCRIPT_TYPES.P2WPKH: {
-      if (!ourPubKey) return { type };
+      if (!ourPubKey) return {type};
 
       // does our hash160(pubKey) match the output scripts?
-      const wpkh1 = payments.p2wpkh({ output: script }).hash;
+      const wpkh1 = payments.p2wpkh({output: script}).hash;
       const wpkh2 = bcrypto.hash160(ourPubKey);
-      if (!wpkh1!.equals(wpkh2)) return { type };
+      if (!wpkh1!.equals(wpkh2)) return {type};
 
       return {
         type,
@@ -647,7 +664,7 @@ function expandOutput(script: Buffer, ourPubKey?: Buffer): TxbOutput {
     }
 
     case SCRIPT_TYPES.P2PK: {
-      const p2pk = payments.p2pk({ output: script });
+      const p2pk = payments.p2pk({output: script});
       return {
         type,
         pubkeys: [p2pk.pubkey],
@@ -656,7 +673,7 @@ function expandOutput(script: Buffer, ourPubKey?: Buffer): TxbOutput {
     }
 
     case SCRIPT_TYPES.P2MS: {
-      const p2ms = payments.p2ms({ output: script });
+      const p2ms = payments.p2ms({output: script});
       return {
         type,
         pubkeys: p2ms.pubkeys,
@@ -666,7 +683,7 @@ function expandOutput(script: Buffer, ourPubKey?: Buffer): TxbOutput {
     }
   }
 
-  return { type };
+  return {type};
 }
 
 function prepareInput(
@@ -677,11 +694,11 @@ function prepareInput(
 ): TxbInput {
   if (redeemScript && witnessScript) {
     const p2wsh = payments.p2wsh({
-      redeem: { output: witnessScript },
+      redeem: {output: witnessScript},
     }) as Payment;
-    const p2wshAlt = payments.p2wsh({ output: redeemScript }) as Payment;
-    const p2sh = payments.p2sh({ redeem: { output: redeemScript } }) as Payment;
-    const p2shAlt = payments.p2sh({ redeem: p2wsh }) as Payment;
+    const p2wshAlt = payments.p2wsh({output: redeemScript}) as Payment;
+    const p2sh = payments.p2sh({redeem: {output: redeemScript}}) as Payment;
+    const p2shAlt = payments.p2sh({redeem: p2wsh}) as Payment;
 
     // enforces P2SH(P2WSH(...))
     if (!p2wsh.hash!.equals(p2wshAlt.hash!))
@@ -693,9 +710,9 @@ function prepareInput(
     if (!expanded.pubkeys)
       throw new Error(
         expanded.type +
-          ' not supported as witnessScript (' +
-          bscript.toASM(witnessScript) +
-          ')',
+        ' not supported as witnessScript (' +
+        bscript.toASM(witnessScript) +
+        ')',
       );
     if (input.signatures && input.signatures.some(x => x !== undefined)) {
       expanded.signatures = input.signatures;
@@ -726,12 +743,12 @@ function prepareInput(
   }
 
   if (redeemScript) {
-    const p2sh = payments.p2sh({ redeem: { output: redeemScript } }) as Payment;
+    const p2sh = payments.p2sh({redeem: {output: redeemScript}}) as Payment;
 
     if (input.prevOutScript) {
       let p2shAlt;
       try {
-        p2shAlt = payments.p2sh({ output: input.prevOutScript }) as Payment;
+        p2shAlt = payments.p2sh({output: input.prevOutScript}) as Payment;
       } catch (e) {
         throw new Error('PrevOutScript must be P2SH');
       }
@@ -743,9 +760,9 @@ function prepareInput(
     if (!expanded.pubkeys)
       throw new Error(
         expanded.type +
-          ' not supported as redeemScript (' +
-          bscript.toASM(redeemScript) +
-          ')',
+        ' not supported as redeemScript (' +
+        bscript.toASM(redeemScript) +
+        ')',
       );
     if (input.signatures && input.signatures.some(x => x !== undefined)) {
       expanded.signatures = input.signatures;
@@ -753,7 +770,7 @@ function prepareInput(
 
     let signScript = redeemScript;
     if (expanded.type === SCRIPT_TYPES.P2WPKH) {
-      signScript = payments.p2pkh({ pubkey: expanded.pubkeys[0] }).output!;
+      signScript = payments.p2pkh({pubkey: expanded.pubkeys[0]}).output!;
     }
 
     return {
@@ -774,10 +791,10 @@ function prepareInput(
   }
 
   if (witnessScript) {
-    const p2wsh = payments.p2wsh({ redeem: { output: witnessScript } });
+    const p2wsh = payments.p2wsh({redeem: {output: witnessScript}});
 
     if (input.prevOutScript) {
-      const p2wshAlt = payments.p2wsh({ output: input.prevOutScript });
+      const p2wshAlt = payments.p2wsh({output: input.prevOutScript});
       if (!p2wsh.hash!.equals(p2wshAlt.hash!))
         throw new Error('Witness script inconsistent with prevOutScript');
     }
@@ -786,9 +803,9 @@ function prepareInput(
     if (!expanded.pubkeys)
       throw new Error(
         expanded.type +
-          ' not supported as witnessScript (' +
-          bscript.toASM(witnessScript) +
-          ')',
+        ' not supported as witnessScript (' +
+        bscript.toASM(witnessScript) +
+        ')',
       );
     if (input.signatures && input.signatures.some(x => x !== undefined)) {
       expanded.signatures = input.signatures;
@@ -831,9 +848,9 @@ function prepareInput(
     if (!expanded.pubkeys)
       throw new Error(
         expanded.type +
-          ' not supported (' +
-          bscript.toASM(input.prevOutScript) +
-          ')',
+        ' not supported (' +
+        bscript.toASM(input.prevOutScript) +
+        ')',
       );
     if (input.signatures && input.signatures.some(x => x !== undefined)) {
       expanded.signatures = input.signatures;
@@ -841,7 +858,7 @@ function prepareInput(
 
     let signScript = input.prevOutScript;
     if (expanded.type === SCRIPT_TYPES.P2WPKH) {
-      signScript = payments.p2pkh({ pubkey: expanded.pubkeys[0] })
+      signScript = payments.p2pkh({pubkey: expanded.pubkeys[0]})
         .output as Buffer;
     }
 
@@ -859,7 +876,7 @@ function prepareInput(
     };
   }
 
-  const prevOutScript = payments.p2pkh({ pubkey: ourPubKey }).output;
+  const prevOutScript = payments.p2pkh({pubkey: ourPubKey}).output;
   return {
     prevOutType: SCRIPT_TYPES.P2PKH,
     prevOutScript,
@@ -886,19 +903,19 @@ function build(
       if (pubkeys.length === 0) break;
       if (signatures.length === 0) break;
 
-      return payments.p2pkh({ pubkey: pubkeys[0], signature: signatures[0] });
+      return payments.p2pkh({pubkey: pubkeys[0], signature: signatures[0]});
     }
     case SCRIPT_TYPES.P2WPKH: {
       if (pubkeys.length === 0) break;
       if (signatures.length === 0) break;
 
-      return payments.p2wpkh({ pubkey: pubkeys[0], signature: signatures[0] });
+      return payments.p2wpkh({pubkey: pubkeys[0], signature: signatures[0]});
     }
     case SCRIPT_TYPES.P2PK: {
       if (pubkeys.length === 0) break;
       if (signatures.length === 0) break;
 
-      return payments.p2pk({ signature: signatures[0] });
+      return payments.p2pk({signature: signatures[0]});
     }
     case SCRIPT_TYPES.P2MS: {
       const m = input.maxSignatures;
@@ -912,8 +929,8 @@ function build(
       // otherwise, the number of OP_0's may be >= m, so don't validate (boo)
       const validate = !allowIncomplete || m === signatures.length;
       return payments.p2ms(
-        { m, pubkeys, signatures },
-        { allowIncomplete, validate },
+        {m, pubkeys, signatures},
+        {allowIncomplete, validate},
       );
     }
     case SCRIPT_TYPES.P2SH: {
@@ -1169,13 +1186,13 @@ function checkSignArgs(inputs: TxbInput[], signParams: TxbSignArg): void {
 }
 
 function trySign({
-  input,
-  ourPubKey,
-  keyPair,
-  signatureHash,
-  hashType,
-  useLowR,
-}: SigningData): void {
+                   input,
+                   ourPubKey,
+                   keyPair,
+                   signatureHash,
+                   hashType,
+                   useLowR,
+                 }: SigningData): void {
   // enforce in order signing of public keys
   let signed = false;
   for (const [i, pubKey] of input.pubkeys!.entries()) {
@@ -1225,7 +1242,7 @@ function getSigningData(
   if (typeof signParams === 'number') {
     console.warn(
       'DEPRECATED: TransactionBuilder sign method arguments ' +
-        'will change in v6, please use the TxbSignArg interface',
+      'will change in v6, please use the TxbSignArg interface',
     );
     vin = signParams;
   } else if (typeof signParams === 'object') {

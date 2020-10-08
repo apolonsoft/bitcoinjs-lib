@@ -1,7 +1,8 @@
-import { BufferReader, BufferWriter, reverseBuffer } from './bufferutils';
+import {BufferReader, BufferWriter, reverseBuffer} from './bufferutils';
 import * as bcrypto from './crypto';
+import {Network, networkConfig} from './networks';
 import * as bscript from './script';
-import { OPS as opcodes } from './script';
+import {OPS as opcodes} from './script';
 import * as types from './types';
 
 const typeforce = require('typeforce');
@@ -66,11 +67,12 @@ export class Transaction {
   static readonly ADVANCED_TRANSACTION_MARKER = 0x00;
   static readonly ADVANCED_TRANSACTION_FLAG = 0x01;
 
-  static fromBuffer(buffer: Buffer, _NO_STRICT?: boolean): Transaction {
+  static fromBuffer(buffer: Buffer, network: Network, _NO_STRICT?: boolean): Transaction {
     const bufferReader = new BufferReader(buffer);
-
-    const tx = new Transaction();
+    network = network || networkConfig.bitcoin;
+    const tx = new Transaction(network);
     tx.version = bufferReader.readInt32();
+    if (network.timeInTransaction && buffer.length !== 10) tx.time = bufferReader.readUInt32();
 
     const marker = bufferReader.readUInt8();
     const flag = bufferReader.readUInt8();
@@ -123,8 +125,9 @@ export class Transaction {
     return tx;
   }
 
-  static fromHex(hex: string): Transaction {
-    return Transaction.fromBuffer(Buffer.from(hex, 'hex'), false);
+  static fromHex(hex: string, network: Network): Transaction {
+    const buffer = Buffer.from(hex, 'hex');
+    return Transaction.fromBuffer(buffer, network, false);
   }
 
   static isCoinbaseHash(buffer: Buffer): boolean {
@@ -135,10 +138,17 @@ export class Transaction {
     return true;
   }
 
+  time: number = 0;
   version: number = 1;
   locktime: number = 0;
   ins: Input[] = [];
   outs: Output[] = [];
+
+  network: Network;
+
+  constructor(network: Network) {
+    this.network = network || networkConfig.bitcoin;
+  }
 
   isCoinbase(): boolean {
     return (
@@ -209,8 +219,24 @@ export class Transaction {
   byteLength(_ALLOW_WITNESS: boolean = true): number {
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
 
-    return (
-      (hasWitnesses ? 10 : 8) +
+    if (this.network.timeInTransaction) {
+      return (12 +
+        varuint.encodingLength(this.ins.length) +
+        varuint.encodingLength(this.outs.length) +
+        this.ins.reduce((sum, input) => {
+          return sum + 40 + varSliceSize(input.script);
+        }, 0) +
+        this.outs.reduce((sum, output) => {
+          return sum + 8 + varSliceSize(output.script);
+        }, 0) +
+        (hasWitnesses
+          ? this.ins.reduce((sum, input) => {
+            return sum + vectorSize(input.witness);
+          }, 0)
+          : 0)
+      );
+    }
+    return (hasWitnesses ? 10 : 8) +
       varuint.encodingLength(this.ins.length) +
       varuint.encodingLength(this.outs.length) +
       this.ins.reduce((sum, input) => {
@@ -221,16 +247,16 @@ export class Transaction {
       }, 0) +
       (hasWitnesses
         ? this.ins.reduce((sum, input) => {
-            return sum + vectorSize(input.witness);
-          }, 0)
-        : 0)
-    );
+          return sum + vectorSize(input.witness);
+        }, 0)
+        : 0);
   }
 
   clone(): Transaction {
-    const newTx = new Transaction();
+    const newTx = new Transaction(this.network);
     newTx.version = this.version;
     newTx.locktime = this.locktime;
+    newTx.time = this.time;
 
     newTx.ins = this.ins.map(txIn => {
       return {
@@ -417,6 +443,7 @@ export class Transaction {
 
     const input = this.ins[inIndex];
     bufferWriter.writeUInt32(this.version);
+    if (this.network.timeInTransaction) bufferWriter.writeUInt32(this.time);
     bufferWriter.writeSlice(hashPrevouts);
     bufferWriter.writeSlice(hashSequence);
     bufferWriter.writeSlice(input.hash);
@@ -472,7 +499,7 @@ export class Transaction {
     const bufferWriter = new BufferWriter(buffer, initialOffset || 0);
 
     bufferWriter.writeInt32(this.version);
-
+    if (this.network.timeInTransaction) bufferWriter.writeUInt32(this.time);
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
 
     if (hasWitnesses) {

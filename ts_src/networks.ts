@@ -7,6 +7,8 @@ export interface Network {
   pubKeyHash: number;
   scriptHash: number;
   wif: number;
+  dustThreshold: number;
+  timeInTransaction: boolean;
 }
 
 interface Bip32 {
@@ -14,14 +16,16 @@ interface Bip32 {
   private: number;
 }
 
-interface NetworkConfig {
-  mainnet: Network;
+export interface NetworkConfig  {
+  bitcoin: Network;
   testnet: Network;
-  regtest?: Network;
+  dogcoin: Network;
+  peercoin: Network;
+  [key: string]: Network;
 }
 
-const bitcoin: NetworkConfig = {
-  mainnet: {
+export const networkConfig: NetworkConfig = {
+  bitcoin: {
     messagePrefix: '\x18Bitcoin Signed Message:\n',
     bech32: 'bc',
     bip32: {
@@ -31,17 +35,8 @@ const bitcoin: NetworkConfig = {
     pubKeyHash: 0x00,
     scriptHash: 0x05,
     wif: 0x80,
-  },
-  regtest: {
-    messagePrefix: '\x18Bitcoin Signed Message:\n',
-    bech32: 'bcrt',
-    bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
-    },
-    pubKeyHash: 0x6f,
-    scriptHash: 0xc4,
-    wif: 0xef,
+    dustThreshold: 546,
+    timeInTransaction: false,
   },
   testnet: {
     messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -53,36 +48,10 @@ const bitcoin: NetworkConfig = {
     pubKeyHash: 0x6f,
     scriptHash: 0xc4,
     wif: 0xef,
+    dustThreshold: 546,
+    timeInTransaction: false,
   },
-};
-
-const litecoin: NetworkConfig = {
-  mainnet: {
-    messagePrefix: '\x19Litecoin Signed Message:\n',
-    bech32: 'ltc',
-    bip32: {
-      public: 0x0488b21e,
-      private: 0x0488ade4,
-    },
-    pubKeyHash: 0x30,
-    scriptHash: 0x32,
-    wif: 0xb0,
-  },
-  testnet: {
-    messagePrefix: '\x18Litecoin Signed Message:\n',
-    bech32: 'tltc',
-    bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
-    },
-    pubKeyHash: 0x6f,
-    scriptHash: 0xc4,
-    wif: 0xef,
-  },
-};
-
-const dogecoin: NetworkConfig = {
-  mainnet: {
+  dogcoin: {
     messagePrefix: '\x19Dogecoin Signed Message:\n',
     bech32: 'xdg',
     bip32: {
@@ -92,93 +61,20 @@ const dogecoin: NetworkConfig = {
     pubKeyHash: 0x1e,
     scriptHash: 0x16,
     wif: 0x9e,
+    dustThreshold: 0,
+    timeInTransaction: false,
   },
-  testnet: {
-    messagePrefix: '\x18Dogecoin Signed Message:\n',
-    bech32: 'xdg',
+  peercoin: {
+    messagePrefix: '\x17PPcoin Signed Message:\n',
+    bech32: 'pc',
     bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
+      public: 0x01da950b,
+      private: 0x01da90d0,
     },
-    pubKeyHash: 0x71,
-    scriptHash: 0xc4,
-    wif: 0xf1,
+    pubKeyHash: 0x37,
+    scriptHash: 0x75,
+    wif: 0xb7,
+    dustThreshold: 0,
+    timeInTransaction: true,
   },
 };
-
-const emercoin: NetworkConfig = {
-  mainnet: {
-    messagePrefix: '\x18Emercoin Signed Message:\n',
-    bech32: 'emc',
-    bip32: {
-      public: 0x0488b21e,
-      private: 0x0488ade4,
-    },
-    pubKeyHash: 0x00,
-    scriptHash: 0x05,
-    wif: 0x80,
-  },
-  testnet: {
-    messagePrefix: '\x18Emercoin Signed Message:\n',
-    bech32: 'emc',
-    bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
-    },
-    pubKeyHash: 0x6f,
-    scriptHash: 0xc4,
-    wif: 0xef,
-  },
-};
-
-const dashcoin: NetworkConfig = {
-  mainnet: {
-    messagePrefix: '\x18Dashcoin Signed Message:\n',
-    bech32: 'dash',
-    bip32: {
-      public: 0x0488b21e,
-      private: 0x0488ade4,
-    },
-    pubKeyHash: 0x4c,
-    scriptHash: 0x10,
-    wif: 0xcc,
-  },
-  testnet: {
-    messagePrefix: '\x18Dashcoin Signed Message:\n',
-    bech32: 'dash',
-    bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
-    },
-    pubKeyHash: 0x8c,
-    scriptHash: 0x13,
-    wif: 0xef,
-  },
-};
-
-const bitcoinsv: NetworkConfig = {
-  mainnet: {
-    messagePrefix: 'unused',
-    bech32: 'bsv',
-    bip32: {
-      public: 0x0488b21e,
-      private: 0x0488ade4,
-    },
-    pubKeyHash: 0x00,
-    scriptHash: 0x05,
-    wif: 0x80,
-  },
-  testnet: {
-    messagePrefix: 'unused',
-    bech32: 'bsvtest',
-    bip32: {
-      public: 0x043587cf,
-      private: 0x04358394,
-    },
-    pubKeyHash: 0x6f,
-    scriptHash: 0xc4,
-    wif: 0x80,
-  },
-};
-
-export { bitcoin, litecoin, bitcoinsv, dogecoin, emercoin, dashcoin };

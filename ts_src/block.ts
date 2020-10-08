@@ -1,5 +1,8 @@
+
 import { BufferReader, BufferWriter, reverseBuffer } from './bufferutils';
 import * as bcrypto from './crypto';
+import {Network} from './networks';
+
 import { Transaction } from './transaction';
 import * as types from './types';
 
@@ -15,7 +18,7 @@ const errorWitnessNotSegwit = new TypeError(
 );
 
 export class Block {
-  static fromBuffer(buffer: Buffer): Block {
+  static fromBuffer(buffer: Buffer, network: Network): Block {
     if (buffer.length < 80) throw new Error('Buffer too small (< 80 bytes)');
 
     const bufferReader = new BufferReader(buffer);
@@ -33,6 +36,7 @@ export class Block {
     const readTransaction = (): any => {
       const tx = Transaction.fromBuffer(
         bufferReader.buffer.slice(bufferReader.offset),
+        network,
         true,
       );
       bufferReader.offset += tx.byteLength();
@@ -47,6 +51,13 @@ export class Block {
       block.transactions.push(tx);
     }
 
+
+    block.blockSig = undefined;
+    if (bufferReader.offset < buffer.length) {
+      const blockSigSize = bufferReader.readVarInt();
+      block.blockSig = bufferReader.readSlice(blockSigSize);
+    }
+
     const witnessCommit = block.getWitnessCommit();
     // This Block contains a witness commit
     if (witnessCommit) block.witnessCommit = witnessCommit;
@@ -54,8 +65,8 @@ export class Block {
     return block;
   }
 
-  static fromHex(hex: string): Block {
-    return Block.fromBuffer(Buffer.from(hex, 'hex'));
+  static fromHex(hex: string, network: Network): Block {
+    return Block.fromBuffer(Buffer.from(hex, 'hex'), network);
   }
 
   static calculateTarget(bits: number): Buffer {
@@ -89,6 +100,7 @@ export class Block {
   }
 
   version: number = 1;
+  blockSig?: Buffer  =  undefined;
   prevHash?: Buffer = undefined;
   merkleRoot?: Buffer = undefined;
   timestamp: number = 0;
@@ -178,12 +190,20 @@ export class Block {
     varuint.encode(this.transactions.length, buffer, bufferWriter.offset);
     bufferWriter.offset += varuint.encode.bytes;
 
+    // bufferWriter.writeVarInt(this.transactions.length);
+
     this.transactions.forEach(tx => {
       const txSize = tx.byteLength(); // TODO: extract from toBuffer?
       tx.toBuffer(buffer, bufferWriter.offset);
       bufferWriter.offset += txSize;
     });
 
+    // let ret = Buffer.concat([buffer, bufferWriter.offset].concat(this.transactions.))
+
+    if (this.blockSig) {
+      // var blockSigLenBuffer = bufferutils.varIntBuffer(this.blockSig.length)
+      // ret = Buffer.concat([ret, blockSigLenBuffer, this.blockSig])
+    }
     return buffer;
   }
 

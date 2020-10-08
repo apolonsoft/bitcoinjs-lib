@@ -1,6 +1,6 @@
 'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
-const bip174_1 = require('bip174');
+const bip174_2 = require('bip174');
 const varuint = require('bip174/src/lib/converter/varint');
 const utils_1 = require('bip174/src/lib/utils');
 const address_1 = require('./address');
@@ -11,6 +11,7 @@ const networks_1 = require('./networks');
 const payments = require('./payments');
 const bscript = require('./script');
 const transaction_1 = require('./transaction');
+const bip174_1 = require('bip174');
 /**
  * These are the default arguments for a Psbt instance.
  */
@@ -19,7 +20,7 @@ const DEFAULT_OPTS = {
    * A bitcoinjs Network object. This is only used if you pass an `address`
    * parameter to addOutput. Otherwise it is not needed and can be left default.
    */
-  network: networks_1.bitcoin.mainnet,
+  network: networks_1.networkConfig.bitcoin,
   /**
    * When extractTransaction is called, the fee rate is checked.
    * THIS IS NOT TO BE RELIED ON.
@@ -60,48 +61,6 @@ const DEFAULT_OPTS = {
  *   Transaction object. Such as fee rate not being larger than maximumFeeRate etc.
  */
 class Psbt {
-  constructor(opts = {}, data = new bip174_1.Psbt(new PsbtTransaction())) {
-    this.data = data;
-    // set defaults
-    this.opts = Object.assign({}, DEFAULT_OPTS, opts);
-    this.__CACHE = {
-      __NON_WITNESS_UTXO_TX_CACHE: [],
-      __NON_WITNESS_UTXO_BUF_CACHE: [],
-      __TX_IN_CACHE: {},
-      __TX: this.data.globalMap.unsignedTx.tx,
-      // Old TransactionBuilder behavior was to not confirm input values
-      // before signing. Even though we highly encourage people to get
-      // the full parent transaction to verify values, the ability to
-      // sign non-segwit inputs without the full transaction was often
-      // requested. So the only way to activate is to use @ts-ignore.
-      // We will disable exporting the Psbt when unsafe sign is active.
-      // because it is not BIP174 compliant.
-      __UNSAFE_SIGN_NONSEGWIT: false,
-    };
-    if (this.data.inputs.length === 0) this.setVersion(2);
-    // Make data hidden when enumerating
-    const dpew = (obj, attr, enumerable, writable) =>
-      Object.defineProperty(obj, attr, {
-        enumerable,
-        writable,
-      });
-    dpew(this, '__CACHE', false, true);
-    dpew(this, 'opts', false, true);
-  }
-  static fromBase64(data, opts = {}) {
-    const buffer = Buffer.from(data, 'base64');
-    return this.fromBuffer(buffer, opts);
-  }
-  static fromHex(data, opts = {}) {
-    const buffer = Buffer.from(data, 'hex');
-    return this.fromBuffer(buffer, opts);
-  }
-  static fromBuffer(buffer, opts = {}) {
-    const psbtBase = bip174_1.Psbt.fromBuffer(buffer, transactionFromBuffer);
-    const psbt = new Psbt(opts, psbtBase);
-    checkTxForDupeIns(psbt.__CACHE.__TX, psbt.__CACHE);
-    return psbt;
-  }
   get inputCount() {
     return this.data.inputs.length;
   }
@@ -136,6 +95,61 @@ class Psbt {
         address,
       };
     });
+  }
+  static fromBase64(data, opts = {}) {
+    const buffer = Buffer.from(data, 'base64');
+    return this.fromBuffer(buffer, opts);
+  }
+  static fromHex(data, opts = {}) {
+    const buffer = Buffer.from(data, 'hex');
+    return this.fromBuffer(buffer, opts);
+  }
+  static fromBuffer(buffer, opts = {}) {
+    const psbtBase = bip174_2.Psbt.fromBuffer(
+      buffer,
+      transactionFromBufferNetwork,
+    );
+    const psbt = new Psbt(opts, psbtBase);
+    checkTxForDupeIns(psbt.__CACHE.__TX, psbt.__CACHE);
+    return psbt;
+  }
+  constructor(opts = {}, data) {
+    if (data) {
+      this.data = data;
+    } else {
+      // tslint:disable-next-line:max-line-length
+      this.data = new bip174_1.Psbt(
+        new PsbtTransaction(
+          Buffer.from([2, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+          opts.network || DEFAULT_OPTS.network,
+        ),
+      );
+    }
+    // set defaults
+    this.opts = Object.assign({}, DEFAULT_OPTS, opts);
+    this.__CACHE = {
+      __NON_WITNESS_UTXO_TX_CACHE: [],
+      __NON_WITNESS_UTXO_BUF_CACHE: [],
+      __TX_IN_CACHE: {},
+      __TX: this.data.globalMap.unsignedTx.tx,
+      // Old TransactionBuilder behavior was to not confirm input values
+      // before signing. Even though we highly encourage people to get
+      // the full parent transaction to verify values, the ability to
+      // sign non-segwit inputs without the full transaction was often
+      // requested. So the only way to activate is to use @ts-ignore.
+      // We will disable exporting the Psbt when unsafe sign is active.
+      // because it is not BIP174 compliant.
+      __UNSAFE_SIGN_NONSEGWIT: false,
+    };
+    if (this.data.inputs.length === 0) this.setVersion(2);
+    // Make data hidden when enumerating
+    const dpew = (obj, attr, enumerable, writable) =>
+      Object.defineProperty(obj, attr, {
+        enumerable,
+        writable,
+      });
+    dpew(this, '__CACHE', false, true);
+    dpew(this, 'opts', false, true);
   }
   combine(...those) {
     this.data.combine(...those.map(o => o.data));
@@ -203,7 +217,12 @@ class Psbt {
     const inputIndex = this.data.inputs.length - 1;
     const input = this.data.inputs[inputIndex];
     if (input.nonWitnessUtxo) {
-      addNonWitnessTxCache(this.__CACHE, input, inputIndex);
+      addNonWitnessTxCache(
+        this.__CACHE,
+        input,
+        inputIndex,
+        this.__CACHE.__TX.network,
+      );
     }
     c.__FEE = undefined;
     c.__FEE_RATE = undefined;
@@ -294,7 +313,12 @@ class Psbt {
   }
   getInputType(inputIndex) {
     const input = utils_1.checkForInput(this.data.inputs, inputIndex);
-    const script = getScriptFromUtxo(inputIndex, input, this.__CACHE);
+    const script = getScriptFromUtxo(
+      inputIndex,
+      input,
+      this.__CACHE,
+      this.__CACHE.__TX.network,
+    );
     const result = getMeaningfulScript(
       script,
       inputIndex,
@@ -580,6 +604,7 @@ class Psbt {
         this.__CACHE,
         this.data.inputs[inputIndex],
         inputIndex,
+        this.__CACHE.__TX.network,
       );
     }
     return this;
@@ -611,14 +636,16 @@ exports.Psbt = Psbt;
  * It takes the "transaction buffer" portion of the psbt buffer and returns a
  * Transaction (From the bip174 library) interface.
  */
-const transactionFromBuffer = buffer => new PsbtTransaction(buffer);
+const transactionFromBufferNetwork = (buffer, network) =>
+  new PsbtTransaction(buffer, network);
 /**
  * This class implements the Transaction interface from bip174 library.
  * It contains a bitcoinjs-lib Transaction object.
  */
 class PsbtTransaction {
-  constructor(buffer = Buffer.from([2, 0, 0, 0, 0, 0, 0, 0, 0, 0])) {
-    this.tx = transaction_1.Transaction.fromBuffer(buffer);
+  constructor(buffer = Buffer.from([2, 0, 0, 0, 0, 0, 0, 0, 0, 0]), network) {
+    network = network || networks_1.networkConfig.bitcoin;
+    this.tx = transaction_1.Transaction.fromBuffer(buffer, network);
     checkTxEmpty(this.tx);
     Object.defineProperty(this, 'tx', {
       enumerable: false,
@@ -736,14 +763,21 @@ function checkFees(psbt, cache, opts) {
   const feeRate = cache.__FEE_RATE || psbt.getFeeRate();
   const vsize = cache.__EXTRACTED_TX.virtualSize();
   const satoshis = feeRate * vsize;
-  if (feeRate >= opts.maximumFeeRate) {
-    throw new Error(
-      `Warning: You are paying around ${(satoshis / 1e8).toFixed(8)} in ` +
-        `fees, which is ${feeRate} satoshi per byte for a transaction ` +
-        `with a VSize of ${vsize} bytes (segwit counted as 0.25 byte per ` +
-        `byte). Use setMaximumFeeRate method to raise your threshold, or ` +
-        `pass true to the first arg of extractTransaction.`,
-    );
+  let maxFeeRate;
+  if (opts.network.maximumFeeRate) {
+    maxFeeRate =
+      opts.maximumFeeRate > opts.network.maximumFeeRate
+        ? opts.maximumFeeRate
+        : opts.network.maximumFeeRate;
+  }
+  if (feeRate >= maxFeeRate) {
+    throw new Error(`Warning: You are paying around ${(satoshis / 1e8).toFixed(
+      8,
+    )} in
+      fees, which is ${feeRate} satoshi per byte for a transaction  +
+    with a VSize of ${vsize} bytes (segwit counted as 0.25 byte per  +
+    byte). Use setMaximumFeeRate method to raise your threshold, or  +
+    pass true to the first arg of extractTransaction.`);
   }
 }
 function checkInputsForPartialSig(inputs, action) {
@@ -944,6 +978,7 @@ function getHashForSig(inputIndex, input, cache, forValidate, sighashTypes) {
       cache,
       input,
       inputIndex,
+      unsignedTx.network,
     );
     const prevoutHash = unsignedTx.ins[inputIndex].hash;
     const utxoHash = nonWitnessUtxoTx.getHash();
@@ -1083,6 +1118,7 @@ function getScriptFromInput(inputIndex, input, cache) {
         cache,
         input,
         inputIndex,
+        unsignedTx.network,
       );
       const prevoutIndex = unsignedTx.ins[inputIndex].index;
       res.script = nonWitnessUtxoTx.outs[prevoutIndex].script;
@@ -1202,10 +1238,11 @@ function witnessStackToScriptWitness(witness) {
   writeVector(witness);
   return buffer;
 }
-function addNonWitnessTxCache(cache, input, inputIndex) {
+function addNonWitnessTxCache(cache, input, inputIndex, network) {
   cache.__NON_WITNESS_UTXO_BUF_CACHE[inputIndex] = input.nonWitnessUtxo;
-  const tx = transaction_1.Transaction.fromBuffer(input.nonWitnessUtxo);
-  cache.__NON_WITNESS_UTXO_TX_CACHE[inputIndex] = tx;
+  cache.__NON_WITNESS_UTXO_TX_CACHE[
+    inputIndex
+  ] = transaction_1.Transaction.fromBuffer(input.nonWitnessUtxo, network);
   const self = cache;
   const selfIndex = inputIndex;
   delete input.nonWitnessUtxo;
@@ -1240,7 +1277,7 @@ function inputFinalizeGetAmts(inputs, tx, cache, mustFinalize) {
     if (input.witnessUtxo) {
       inputAmount += input.witnessUtxo.value;
     } else if (input.nonWitnessUtxo) {
-      const nwTx = nonWitnessUtxoTxFromCache(cache, input, idx);
+      const nwTx = nonWitnessUtxoTxFromCache(cache, input, idx, tx.network);
       const vout = tx.ins[idx].index;
       const out = nwTx.outs[vout];
       inputAmount += out.value;
@@ -1256,14 +1293,14 @@ function inputFinalizeGetAmts(inputs, tx, cache, mustFinalize) {
   cache.__EXTRACTED_TX = tx;
   cache.__FEE_RATE = Math.floor(fee / bytes);
 }
-function nonWitnessUtxoTxFromCache(cache, input, inputIndex) {
+function nonWitnessUtxoTxFromCache(cache, input, inputIndex, network) {
   const c = cache.__NON_WITNESS_UTXO_TX_CACHE;
   if (!c[inputIndex]) {
-    addNonWitnessTxCache(cache, input, inputIndex);
+    addNonWitnessTxCache(cache, input, inputIndex, network);
   }
   return c[inputIndex];
 }
-function getScriptFromUtxo(inputIndex, input, cache) {
+function getScriptFromUtxo(inputIndex, input, cache, network) {
   if (input.witnessUtxo !== undefined) {
     return input.witnessUtxo.script;
   } else if (input.nonWitnessUtxo !== undefined) {
@@ -1271,6 +1308,7 @@ function getScriptFromUtxo(inputIndex, input, cache) {
       cache,
       input,
       inputIndex,
+      network,
     );
     return nonWitnessUtxoTx.outs[cache.__TX.ins[inputIndex].index].script;
   } else {
@@ -1278,7 +1316,12 @@ function getScriptFromUtxo(inputIndex, input, cache) {
   }
 }
 function pubkeyInInput(pubkey, input, inputIndex, cache) {
-  const script = getScriptFromUtxo(inputIndex, input, cache);
+  const script = getScriptFromUtxo(
+    inputIndex,
+    input,
+    cache,
+    cache.__TX.network,
+  );
   const { meaningfulScript } = getMeaningfulScript(
     script,
     inputIndex,

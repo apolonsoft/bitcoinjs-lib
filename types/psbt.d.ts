@@ -1,4 +1,3 @@
-import { Psbt as PsbtBase } from 'bip174';
 import { KeyValue, PsbtGlobalUpdate, PsbtInput, PsbtInputUpdate, PsbtOutput, PsbtOutputUpdate, TransactionInput, TransactionOutput } from 'bip174/src/lib/interfaces';
 import { Signer, SignerAsync } from './ecpair';
 import { Network } from './networks';
@@ -42,18 +41,18 @@ export interface PsbtTxOutput extends TransactionOutput {
  *   Transaction object. Such as fee rate not being larger than maximumFeeRate etc.
  */
 export declare class Psbt {
-    readonly data: PsbtBase;
-    static fromBase64(data: string, opts?: PsbtOptsOptional): Psbt;
-    static fromHex(data: string, opts?: PsbtOptsOptional): Psbt;
-    static fromBuffer(buffer: Buffer, opts?: PsbtOptsOptional): Psbt;
-    private __CACHE;
-    private opts;
-    constructor(opts?: PsbtOptsOptional, data?: PsbtBase);
     readonly inputCount: number;
     version: number;
     locktime: number;
     readonly txInputs: PsbtTxInput[];
     readonly txOutputs: PsbtTxOutput[];
+    static fromBase64(data: string, opts?: PsbtOptsOptional): Psbt;
+    static fromHex(data: string, opts?: PsbtOptsOptional): Psbt;
+    static fromBuffer(buffer: Buffer, opts?: PsbtOptsOptional): Psbt;
+    data: any;
+    private __CACHE;
+    private opts;
+    constructor(opts: PsbtOptsOptional | undefined, data: any);
     combine(...those: Psbt[]): this;
     clone(): Psbt;
     setMaximumFeeRate(satoshiPerByte: number): void;

@@ -1,4 +1,5 @@
-import { bitcoin as BITCOIN_NETWORK } from '../networks';
+
+import {networkConfig} from '../networks';
 import * as bscript from '../script';
 import { Payment, PaymentOpts, Stack } from './index';
 import * as lazy from './lazy';
@@ -49,7 +50,7 @@ export function p2ms(a: Payment, opts?: PaymentOpts): Payment {
     a,
   );
 
-  const network = a.network || BITCOIN_NETWORK.mainnet;
+  const network = a.network || networkConfig.bitcoin;
   const o: Payment = { network };
 
   let chunks: Stack = [];

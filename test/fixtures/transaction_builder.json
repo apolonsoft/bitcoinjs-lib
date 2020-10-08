@@ -2401,7 +2401,6 @@
       {
         "description": "Wrong network for keyPair",
         "exception": "Inconsistent network",
-        "network": "bitcoin",
         "inputs": [
           {
             "txId": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -2410,8 +2409,8 @@
               {
                 "prevOutScriptType": "p2pkh",
                 "keyPair": "91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjJoQFacbgwmaKkrx",
-                "network": "testnet",
-                "throws": true
+                "throws": true,
+                "network": "testnet"
               }
             ]
           }

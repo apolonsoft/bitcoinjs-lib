@@ -5,20 +5,19 @@ export interface Network {
     pubKeyHash: number;
     scriptHash: number;
     wif: number;
+    dustThreshold: number;
+    timeInTransaction: boolean;
 }
 interface Bip32 {
     public: number;
     private: number;
 }
-interface NetworkConfig {
-    mainnet: Network;
+export interface NetworkConfig {
+    bitcoin: Network;
     testnet: Network;
-    regtest?: Network;
+    dogcoin: Network;
+    peercoin: Network;
+    [key: string]: Network;
 }
-declare const bitcoin: NetworkConfig;
-declare const litecoin: NetworkConfig;
-declare const dogecoin: NetworkConfig;
-declare const emercoin: NetworkConfig;
-declare const dashcoin: NetworkConfig;
-declare const bitcoinsv: NetworkConfig;
-export { bitcoin, litecoin, bitcoinsv, dogecoin, emercoin, dashcoin };
+export declare const networkConfig: NetworkConfig;
+export {};

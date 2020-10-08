@@ -13,13 +13,14 @@ interface TxbSignArg {
 export declare class TransactionBuilder {
     network: Network;
     maximumFeeRate: number;
-    static fromTransaction(transaction: Transaction, network?: Network): TransactionBuilder;
+    static fromTransaction(transaction: Transaction): TransactionBuilder;
     private __PREV_TX_SET;
     private __INPUTS;
     private __TX;
     private __USE_LOW_R;
     constructor(network?: Network, maximumFeeRate?: number);
     setLowR(setting?: boolean): boolean;
+    setTime(time: number): void;
     setLockTime(locktime: number): void;
     setVersion(version: number): void;
     addInput(txHash: Buffer | string | Transaction, vout: number, sequence?: number, prevOutScript?: Buffer): number;

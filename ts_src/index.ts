@@ -6,17 +6,17 @@ import * as networks from './networks';
 import * as payments from './payments';
 import * as script from './script';
 
-export {ECPair, address, bip32, crypto, networks, payments, script};
+export { ECPair, address, bip32, crypto, networks, payments, script };
 
-export {Block} from './block';
-export {Psbt, PsbtTxInput, PsbtTxOutput} from './psbt';
-export {OPS as opcodes} from './script';
-export {Transaction} from './transaction';
-export {TransactionBuilder} from './transaction_builder';
+export { Block } from './block';
+export { Psbt, PsbtTxInput, PsbtTxOutput } from './psbt';
+export { OPS as opcodes } from './script';
+export { Transaction } from './transaction';
+export { TransactionBuilder } from './transaction_builder';
 
-export {BIP32Interface} from 'bip32';
-export {ECPairInterface, Signer, SignerAsync} from './ecpair';
-export {Network, bitcoin, bitcoinsv, litecoin, dogecoin, emercoin, dashcoin} from './networks';
+export { BIP32Interface } from 'bip32';
+export { ECPairInterface, Signer, SignerAsync } from './ecpair';
+export { Network } from './networks';
 export {
   Payment,
   PaymentCreator,
@@ -24,5 +24,6 @@ export {
   Stack,
   StackElement,
 } from './payments';
-export {OpCode} from './script';
-export {Input as TxInput, Output as TxOutput} from './transaction';
+export { OpCode } from './script';
+export { Input as TxInput, Output as TxOutput } from './transaction';
+export { Input as InputSV, Output as OutputSV, signBSV } from './bitcoin-sv';

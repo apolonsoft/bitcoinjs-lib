@@ -1,6 +1,6 @@
 'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
-const NETWORKS = require('./networks');
+const networks_1 = require('./networks');
 const types = require('./types');
 const ecc = require('tiny-secp256k1');
 const randomBytes = require('randombytes');
@@ -20,7 +20,7 @@ class ECPair {
     if (options === undefined) options = {};
     this.compressed =
       options.compressed === undefined ? true : options.compressed;
-    this.network = options.network || NETWORKS.bitcoin.mainnet;
+    this.network = options.network || networks_1.networkConfig.bitcoin;
     if (__Q !== undefined) this.__Q = ecc.pointCompress(__Q, this.compressed);
   }
   get privateKey() {
@@ -84,7 +84,7 @@ function fromWIF(wifString, network) {
     if (!network) throw new Error('Unknown network version');
     // otherwise, assume a network object (or default to bitcoin)
   } else {
-    network = network || NETWORKS.bitcoin.mainnet;
+    network = network || networks_1.networkConfig.bitcoin;
     if (version !== network.wif) throw new Error('Invalid network version');
   }
   return fromPrivateKey(decoded.privateKey, {

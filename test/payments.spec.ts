@@ -17,9 +17,9 @@ import * as u from './payments.utils';
       it(f.description + ' as expected', () => {
         const args = u.preform(f.arguments);
         const actual = fn(args, f.options);
-
         u.equate(actual, f.expected, f.arguments);
       });
+
 
       it(f.description + ' as expected (no validation)', () => {
         const args = u.preform(f.arguments);
@@ -32,14 +32,16 @@ import * as u from './payments.utils';
 
         u.equate(actual, f.expected, f.arguments);
       });
+
+
     });
+
 
     fixtures.invalid.forEach((f: any) => {
       it(
         'throws ' + f.exception + (f.description ? 'for ' + f.description : ''),
         () => {
           const args = u.preform(f.arguments);
-
           assert.throws(() => {
             fn(args, f.options);
           }, new RegExp(f.exception));
@@ -109,5 +111,7 @@ import * as u from './payments.utils';
         });
       }
     });
+
+
   });
 });

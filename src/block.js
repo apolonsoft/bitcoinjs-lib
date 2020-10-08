@@ -16,6 +16,7 @@ const errorWitnessNotSegwit = new TypeError(
 class Block {
   constructor() {
     this.version = 1;
+    this.blockSig = undefined;
     this.prevHash = undefined;
     this.merkleRoot = undefined;
     this.timestamp = 0;
@@ -24,7 +25,7 @@ class Block {
     this.nonce = 0;
     this.transactions = undefined;
   }
-  static fromBuffer(buffer) {
+  static fromBuffer(buffer, network) {
     if (buffer.length < 80) throw new Error('Buffer too small (< 80 bytes)');
     const bufferReader = new bufferutils_1.BufferReader(buffer);
     const block = new Block();
@@ -38,6 +39,7 @@ class Block {
     const readTransaction = () => {
       const tx = transaction_1.Transaction.fromBuffer(
         bufferReader.buffer.slice(bufferReader.offset),
+        network,
         true,
       );
       bufferReader.offset += tx.byteLength();
@@ -49,13 +51,18 @@ class Block {
       const tx = readTransaction();
       block.transactions.push(tx);
     }
+    block.blockSig = undefined;
+    if (bufferReader.offset < buffer.length) {
+      const blockSigSize = bufferReader.readVarInt();
+      block.blockSig = bufferReader.readSlice(blockSigSize);
+    }
     const witnessCommit = block.getWitnessCommit();
     // This Block contains a witness commit
     if (witnessCommit) block.witnessCommit = witnessCommit;
     return block;
   }
-  static fromHex(hex) {
-    return Block.fromBuffer(Buffer.from(hex, 'hex'));
+  static fromHex(hex, network) {
+    return Block.fromBuffer(Buffer.from(hex, 'hex'), network);
   }
   static calculateTarget(bits) {
     const exponent = ((bits & 0xff000000) >> 24) - 3;
@@ -145,11 +152,17 @@ class Block {
     if (headersOnly || !this.transactions) return buffer;
     varuint.encode(this.transactions.length, buffer, bufferWriter.offset);
     bufferWriter.offset += varuint.encode.bytes;
+    // bufferWriter.writeVarInt(this.transactions.length);
     this.transactions.forEach(tx => {
       const txSize = tx.byteLength(); // TODO: extract from toBuffer?
       tx.toBuffer(buffer, bufferWriter.offset);
       bufferWriter.offset += txSize;
     });
+    // let ret = Buffer.concat([buffer, bufferWriter.offset].concat(this.transactions.))
+    if (this.blockSig) {
+      // var blockSigLenBuffer = bufferutils.varIntBuffer(this.blockSig.length)
+      // ret = Buffer.concat([ret, blockSigLenBuffer, this.blockSig])
+    }
     return buffer;
   }
   toHex(headersOnly) {

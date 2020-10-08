@@ -5,7 +5,7 @@ const bufferutils_1 = require('./bufferutils');
 const classify = require('./classify');
 const bcrypto = require('./crypto');
 const ECPair = require('./ecpair');
-const networks = require('./networks');
+const networks_1 = require('./networks');
 const payments = require('./payments');
 const bscript = require('./script');
 const script_1 = require('./script');
@@ -49,12 +49,15 @@ function txIsTransaction(tx) {
 class TransactionBuilder {
   // WARNING: maximumFeeRate is __NOT__ to be relied on,
   //          it's just another potential safety mechanism (safety in-depth)
-  constructor(network = networks.bitcoin.mainnet, maximumFeeRate = 2500) {
+  constructor(
+    network = networks_1.networkConfig.bitcoin,
+    maximumFeeRate = 2500,
+  ) {
     this.network = network;
     this.maximumFeeRate = maximumFeeRate;
     this.__PREV_TX_SET = {};
     this.__INPUTS = [];
-    this.__TX = new transaction_1.Transaction();
+    this.__TX = new transaction_1.Transaction(network);
     this.__TX.version = 2;
     this.__USE_LOW_R = false;
     console.warn(
@@ -65,11 +68,12 @@ class TransactionBuilder {
         'files as well.',
     );
   }
-  static fromTransaction(transaction, network) {
-    const txb = new TransactionBuilder(network);
+  static fromTransaction(transaction) {
+    const txb = new TransactionBuilder(transaction.network);
     // Copy transaction fields
     txb.setVersion(transaction.version);
     txb.setLockTime(transaction.locktime);
+    txb.setTime(transaction.time);
     // Copy outputs (done first to avoid signature invalidation)
     transaction.outs.forEach(txOut => {
       txb.addOutput(txOut.script, txOut.value);
@@ -95,6 +99,19 @@ class TransactionBuilder {
     }
     this.__USE_LOW_R = setting;
     return setting;
+  }
+  setTime(time) {
+    typeforce(types.UInt32, time);
+    // if any signatures exist, throw
+    if (
+      this.__INPUTS.some(input => {
+        if (!input.signatures) return false;
+        return input.signatures.some(s => s !== undefined);
+      })
+    ) {
+      throw new Error('No, this would invalidate signatures');
+    }
+    this.__TX.time = time;
   }
   setLockTime(locktime) {
     typeforce(types.UInt32, locktime);

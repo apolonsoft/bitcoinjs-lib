@@ -2,6 +2,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 const bufferutils_1 = require('./bufferutils');
 const bcrypto = require('./crypto');
+const networks_1 = require('./networks');
 const bscript = require('./script');
 const script_1 = require('./script');
 const types = require('./types');
@@ -39,16 +40,21 @@ function isOutput(out) {
   return out.value !== undefined;
 }
 class Transaction {
-  constructor() {
+  constructor(network) {
+    this.time = 0;
     this.version = 1;
     this.locktime = 0;
     this.ins = [];
     this.outs = [];
+    this.network = network || networks_1.networkConfig.bitcoin;
   }
-  static fromBuffer(buffer, _NO_STRICT) {
+  static fromBuffer(buffer, network, _NO_STRICT) {
     const bufferReader = new bufferutils_1.BufferReader(buffer);
-    const tx = new Transaction();
+    network = network || networks_1.networkConfig.bitcoin;
+    const tx = new Transaction(network);
     tx.version = bufferReader.readInt32();
+    if (network.timeInTransaction && buffer.length !== 10)
+      tx.time = bufferReader.readUInt32();
     const marker = bufferReader.readUInt8();
     const flag = bufferReader.readUInt8();
     let hasWitnesses = false;
@@ -91,8 +97,9 @@ class Transaction {
       throw new Error('Transaction has unexpected data');
     return tx;
   }
-  static fromHex(hex) {
-    return Transaction.fromBuffer(Buffer.from(hex, 'hex'), false);
+  static fromHex(hex, network) {
+    const buffer = Buffer.from(hex, 'hex');
+    return Transaction.fromBuffer(buffer, network, false);
   }
   static isCoinbaseHash(buffer) {
     typeforce(types.Hash256bit, buffer);
@@ -155,6 +162,24 @@ class Transaction {
   }
   byteLength(_ALLOW_WITNESS = true) {
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
+    if (this.network.timeInTransaction) {
+      return (
+        12 +
+        varuint.encodingLength(this.ins.length) +
+        varuint.encodingLength(this.outs.length) +
+        this.ins.reduce((sum, input) => {
+          return sum + 40 + varSliceSize(input.script);
+        }, 0) +
+        this.outs.reduce((sum, output) => {
+          return sum + 8 + varSliceSize(output.script);
+        }, 0) +
+        (hasWitnesses
+          ? this.ins.reduce((sum, input) => {
+              return sum + vectorSize(input.witness);
+            }, 0)
+          : 0)
+      );
+    }
     return (
       (hasWitnesses ? 10 : 8) +
       varuint.encodingLength(this.ins.length) +
@@ -173,9 +198,10 @@ class Transaction {
     );
   }
   clone() {
-    const newTx = new Transaction();
+    const newTx = new Transaction(this.network);
     newTx.version = this.version;
     newTx.locktime = this.locktime;
+    newTx.time = this.time;
     newTx.ins = this.ins.map(txIn => {
       return {
         hash: txIn.hash,
@@ -317,6 +343,7 @@ class Transaction {
     bufferWriter = new bufferutils_1.BufferWriter(tbuffer, 0);
     const input = this.ins[inIndex];
     bufferWriter.writeUInt32(this.version);
+    if (this.network.timeInTransaction) bufferWriter.writeUInt32(this.time);
     bufferWriter.writeSlice(hashPrevouts);
     bufferWriter.writeSlice(hashSequence);
     bufferWriter.writeSlice(input.hash);
@@ -359,6 +386,7 @@ class Transaction {
       initialOffset || 0,
     );
     bufferWriter.writeInt32(this.version);
+    if (this.network.timeInTransaction) bufferWriter.writeUInt32(this.time);
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
     if (hasWitnesses) {
       bufferWriter.writeUInt8(Transaction.ADVANCED_TRANSACTION_MARKER);

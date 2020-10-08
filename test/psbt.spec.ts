@@ -5,12 +5,12 @@ import { describe, it } from 'mocha';
 import {
   bip32,
   ECPair,
-  networks as NETWORKS,
   payments,
   Psbt,
   Signer,
   SignerAsync,
 } from '..';
+import {networkConfig} from '../src/networks';
 
 import * as preFixtures from './fixtures/psbt.json';
 
@@ -132,7 +132,7 @@ describe(`Psbt`, () => {
         const psbt = Psbt.fromBase64(f.psbt);
 
         f.keys.forEach(({ inputToSign, WIF }) => {
-          const keyPair = ECPair.fromWIF(WIF, NETWORKS.testnet);
+          const keyPair = ECPair.fromWIF(WIF, networkConfig.testnet);
           psbt.signInput(inputToSign, keyPair);
         });
 

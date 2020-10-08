@@ -1,6 +1,6 @@
 'use strict';
 Object.defineProperty(exports, '__esModule', { value: true });
-const networks = require('./networks');
+const networks_1 = require('./networks');
 const payments = require('./payments');
 const bscript = require('./script');
 const types = require('./types');
@@ -43,7 +43,7 @@ function toBech32(data, version, prefix) {
 exports.toBech32 = toBech32;
 function fromOutputScript(output, network) {
   // TODO: Network
-  network = network || networks.bitcoin.mainnet;
+  network = network || networks_1.networkConfig.bitcoin;
   try {
     return payments.p2pkh({ output, network }).address;
   } catch (e) {}
@@ -60,7 +60,7 @@ function fromOutputScript(output, network) {
 }
 exports.fromOutputScript = fromOutputScript;
 function toOutputScript(address, network) {
-  network = network || networks.bitcoin.mainnet;
+  network = network || networks_1.networkConfig.bitcoin;
   let decodeBase58;
   let decodeBech32;
   try {

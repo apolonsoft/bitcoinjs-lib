@@ -1,13 +1,19 @@
 import * as assert from 'assert';
-import { beforeEach, describe, it } from 'mocha';
-import { Transaction } from '..';
+import {describe, it} from 'mocha';
+import {networkConfig, NetworkConfig} from '../src/networks';
 import * as bscript from '../src/script';
+import {Transaction} from '../src/transaction';
 import * as fixtures from './fixtures/transaction.json';
 
 describe('Transaction', () => {
-  function fromRaw(raw: any, noWitness?: boolean): Transaction {
-    const tx = new Transaction();
+
+  function fromRaw(f: any, noWitness?: boolean): Transaction {
+    const raw = f.raw;
+    const key: (keyof NetworkConfig) = f.network;
+    const tx = new Transaction(networkConfig[key]);
+
     tx.version = raw.version;
+    tx.time = raw.time;
     tx.locktime = raw.locktime;
 
     raw.ins.forEach((txIn: any, i: number) => {
@@ -51,15 +57,17 @@ describe('Transaction', () => {
       const id = f.id || f.hash;
       const txHex = f.hex || f.txHex;
 
+      const key2: (keyof NetworkConfig) = f.network;
+
       it('imports ' + f.description + ' (' + id + ')', () => {
-        const actual = Transaction.fromHex(txHex);
+        const actual = Transaction.fromHex(txHex, networkConfig[key2]);
 
         assert.strictEqual(actual.toHex(), txHex);
       });
 
       if (f.whex) {
         it('imports ' + f.description + ' (' + id + ') as witness', () => {
-          const actual = Transaction.fromHex(f.whex);
+          const actual = Transaction.fromHex(f.whex, networkConfig[key2]);
 
           assert.strictEqual(actual.toHex(), f.whex);
         });
@@ -71,16 +79,21 @@ describe('Transaction', () => {
     fixtures.hashForWitnessV0.forEach(importExport);
 
     fixtures.invalid.fromBuffer.forEach(f => {
+
+      const key3: (keyof NetworkConfig) = f.network;
+
       it('throws on ' + f.exception, () => {
         assert.throws(() => {
-          Transaction.fromHex(f.hex);
+          Transaction.fromHex(f.hex, networkConfig[key3]);
         }, new RegExp(f.exception));
       });
     });
 
+    const key: (keyof NetworkConfig) = 'bitcoin';
+
     it('.version should be interpreted as an int32le', () => {
       const txHex = 'ffffffff0000ffffffff';
-      const tx = Transaction.fromHex(txHex);
+      const tx = Transaction.fromHex(txHex, networkConfig[key]);
       assert.strictEqual(-1, tx.version);
       assert.strictEqual(0xffffffff, tx.locktime);
     });
@@ -89,13 +102,13 @@ describe('Transaction', () => {
   describe('toBuffer/toHex', () => {
     fixtures.valid.forEach(f => {
       it('exports ' + f.description + ' (' + f.id + ')', () => {
-        const actual = fromRaw(f.raw, true);
+        const actual = fromRaw(f, true);
         assert.strictEqual(actual.toHex(), f.hex);
       });
 
       if (f.whex) {
         it('exports ' + f.description + ' (' + f.id + ') as witness', () => {
-          const wactual = fromRaw(f.raw);
+          const wactual = fromRaw(f);
           assert.strictEqual(wactual.toHex(), f.whex);
         });
       }
@@ -103,7 +116,7 @@ describe('Transaction', () => {
 
     it('accepts target Buffer and offset parameters', () => {
       const f = fixtures.valid[0];
-      const actual = fromRaw(f.raw);
+      const actual = fromRaw(f);
       const byteLength = actual.byteLength();
 
       const target = Buffer.alloc(byteLength * 2);
@@ -118,16 +131,18 @@ describe('Transaction', () => {
       assert.deepStrictEqual(a, target.slice(0, byteLength));
       assert.deepStrictEqual(b, target.slice(byteLength));
     });
+
   });
 
   describe('hasWitnesses', () => {
     fixtures.valid.forEach(f => {
       it(
         'detects if the transaction has witnesses: ' +
-          (f.whex ? 'true' : 'false'),
+        (f.whex ? 'true' : 'false'),
         () => {
+          const key: (keyof NetworkConfig) = f.network || 'bitcoin';
           assert.strictEqual(
-            Transaction.fromHex(f.whex ? f.whex : f.hex).hasWitnesses(),
+            Transaction.fromHex(f.whex ? f.whex : f.hex, networkConfig[key]).hasWitnesses(),
             !!f.whex,
           );
         },
@@ -138,7 +153,8 @@ describe('Transaction', () => {
   describe('weight/virtualSize', () => {
     it('computes virtual size', () => {
       fixtures.valid.forEach(f => {
-        const transaction = Transaction.fromHex(f.whex ? f.whex : f.hex);
+        const key: (keyof NetworkConfig) = f.network || 'bitcoin';
+        const transaction = Transaction.fromHex(f.whex ? f.whex : f.hex, networkConfig[key]);
 
         assert.strictEqual(transaction.virtualSize(), f.virtualSize);
       });
@@ -146,7 +162,8 @@ describe('Transaction', () => {
 
     it('computes weight', () => {
       fixtures.valid.forEach(f => {
-        const transaction = Transaction.fromHex(f.whex ? f.whex : f.hex);
+        const key: (keyof NetworkConfig) = f.network || 'bitcoin';
+        const transaction = Transaction.fromHex(f.whex ? f.whex : f.hex, networkConfig[key]);
 
         assert.strictEqual(transaction.weight(), f.weight);
       });
@@ -162,14 +179,17 @@ describe('Transaction', () => {
       );
     });
 
+    const key: string = 'bitcoin';
+
     it('returns an index', () => {
-      const tx = new Transaction();
+
+      const tx = new Transaction(networkConfig[key]);
       assert.strictEqual(tx.addInput(prevTxHash, 0), 0);
       assert.strictEqual(tx.addInput(prevTxHash, 0), 1);
     });
 
     it('defaults to empty script, witness and 0xffffffff SEQUENCE number', () => {
-      const tx = new Transaction();
+      const tx = new Transaction(networkConfig[key]);
       tx.addInput(prevTxHash, 0);
 
       assert.strictEqual(tx.ins[0].script.length, 0);
@@ -179,7 +199,8 @@ describe('Transaction', () => {
 
     fixtures.invalid.addInput.forEach(f => {
       it('throws on ' + f.exception, () => {
-        const tx = new Transaction();
+        const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
+        const tx = new Transaction(networkConfig[key3]);
         const hash = Buffer.from(f.hash, 'hex');
 
         assert.throws(() => {
@@ -191,7 +212,8 @@ describe('Transaction', () => {
 
   describe('addOutput', () => {
     it('returns an index', () => {
-      const tx = new Transaction();
+      const key: string = 'bitcoin';
+      const tx = new Transaction(networkConfig[key]);
       assert.strictEqual(tx.addOutput(Buffer.alloc(0), 0), 0);
       assert.strictEqual(tx.addOutput(Buffer.alloc(0), 0), 1);
     });
@@ -202,8 +224,10 @@ describe('Transaction', () => {
       let actual: Transaction;
       let expected: Transaction;
 
+      const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
+
       beforeEach(() => {
-        expected = Transaction.fromHex(f.hex);
+        expected = Transaction.fromHex(f.hex, networkConfig[key3]);
         actual = expected.clone();
       });
 
@@ -218,121 +242,128 @@ describe('Transaction', () => {
   });
 
   describe('getHash/getId', () => {
-    function verify(f: any): void {
-      it('should return the id for ' + f.id + '(' + f.description + ')', () => {
-        const tx = Transaction.fromHex(f.whex || f.hex);
+      function verify(f: any): void {
+        const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
+        it('should return the id for ' + f.id + '(' + f.description + ')', () => {
+          const tx = Transaction.fromHex(f.whex || f.hex, networkConfig[key3]);
 
-        assert.strictEqual(tx.getHash().toString('hex'), f.hash);
-        assert.strictEqual(tx.getId(), f.id);
-      });
-    }
+          assert.strictEqual(tx.getHash().toString('hex'), f.hash);
+          assert.strictEqual(tx.getId(), f.id);
+        });
+      }
 
-    fixtures.valid.forEach(verify);
-  });
+      fixtures.valid.forEach(verify);
+    });
 
   describe('isCoinbase', () => {
-    function verify(f: any): void {
-      it(
-        'should return ' +
+      function verify(f: any): void {
+        it(
+          'should return ' +
           f.coinbase +
           ' for ' +
           f.id +
           '(' +
           f.description +
           ')',
-        () => {
-          const tx = Transaction.fromHex(f.hex);
+          () => {
+            const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
 
-          assert.strictEqual(tx.isCoinbase(), f.coinbase);
-        },
-      );
-    }
+            const tx = Transaction.fromHex(f.hex,  networkConfig[key3]);
 
-    fixtures.valid.forEach(verify);
-  });
+            assert.strictEqual(tx.isCoinbase(), f.coinbase);
+          },
+        );
+      }
+
+      fixtures.valid.forEach(verify);
+    });
 
   describe('hashForSignature', () => {
-    it('does not use Witness serialization', () => {
-      const randScript = Buffer.from('6a', 'hex');
-
-      const tx = new Transaction();
-      tx.addInput(
-        Buffer.from(
-          '0000000000000000000000000000000000000000000000000000000000000000',
-          'hex',
-        ),
-        0,
-      );
-      tx.addOutput(randScript, 5000000000);
-
-      const original = (tx as any).__toBuffer;
-      (tx as any).__toBuffer = function(
-        this: Transaction,
-        a: any,
-        b: any,
-        c: any,
-      ): any {
-        if (c !== false) throw new Error('hashForSignature MUST pass false');
-
-        return original.call(this, a, b, c);
-      };
-
-      assert.throws(() => {
-        (tx as any).__toBuffer(undefined, undefined, true);
-      }, /hashForSignature MUST pass false/);
-
-      // assert hashForSignature does not pass false
-      assert.doesNotThrow(() => {
-        tx.hashForSignature(0, randScript, 1);
-      });
-    });
-
-    fixtures.hashForSignature.forEach(f => {
-      it(
-        'should return ' +
-          f.hash +
-          ' for ' +
-          (f.description ? 'case "' + f.description + '"' : f.script),
-        () => {
-          const tx = Transaction.fromHex(f.txHex);
-          const script = bscript.fromASM(f.script);
-
-          assert.strictEqual(
-            tx.hashForSignature(f.inIndex, script, f.type).toString('hex'),
-            f.hash,
+        it('does not use Witness serialization', () => {
+          const randScript = Buffer.from('6a', 'hex');
+          const key: string = 'bitcoin';
+          const tx = new Transaction(networkConfig[key]);
+          tx.addInput(
+            Buffer.from(
+              '0000000000000000000000000000000000000000000000000000000000000000',
+              'hex',
+            ),
+            0,
           );
-        },
-      );
-    });
-  });
+          tx.addOutput(randScript, 5000000000);
+
+          const original = (tx as any).__toBuffer;
+          (tx as any).__toBuffer = function(
+            this: Transaction,
+            a: any,
+            b: any,
+            c: any,
+          ): any {
+            if (c !== false) throw new Error('hashForSignature MUST pass false');
+
+            return original.call(this, a, b, c);
+          };
+
+          assert.throws(() => {
+            (tx as any).__toBuffer(undefined, undefined, true);
+          }, /hashForSignature MUST pass false/);
+
+          // assert hashForSignature does not pass false
+          assert.doesNotThrow(() => {
+            tx.hashForSignature(0, randScript, 1);
+          });
+        });
+
+        fixtures.hashForSignature.forEach(f => {
+          it(
+            'should return ' +
+            f.hash +
+            ' for ' +
+            (f.description ? 'case "' + f.description + '"' : f.script),
+            () => {
+              const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
+              const tx = Transaction.fromHex(f.txHex, networkConfig[key3]);
+              const script = bscript.fromASM(f.script);
+
+              assert.strictEqual(
+                tx.hashForSignature(f.inIndex, script, f.type).toString('hex'),
+                f.hash,
+              );
+            },
+          );
+        });
+      });
 
   describe('hashForWitnessV0', () => {
-    fixtures.hashForWitnessV0.forEach(f => {
-      it(
-        'should return ' +
-          f.hash +
-          ' for ' +
-          (f.description ? 'case "' + f.description + '"' : ''),
-        () => {
-          const tx = Transaction.fromHex(f.txHex);
-          const script = bscript.fromASM(f.script);
+        fixtures.hashForWitnessV0.forEach(f => {
+          it(
+            'should return ' +
+            f.hash +
+            ' for ' +
+            (f.description ? 'case "' + f.description + '"' : ''),
+            () => {
+              const key3: (keyof NetworkConfig) = f.network || 'bitcoin';
+              const tx = Transaction.fromHex(f.txHex,  networkConfig[key3]);
+              const script = bscript.fromASM(f.script);
 
-          assert.strictEqual(
-            tx
-              .hashForWitnessV0(f.inIndex, script, f.value, f.type)
-              .toString('hex'),
-            f.hash,
+              assert.strictEqual(
+                tx
+                  .hashForWitnessV0(f.inIndex, script, f.value, f.type)
+                  .toString('hex'),
+                f.hash,
+              );
+            },
           );
-        },
-      );
-    });
-  });
+        });
+      });
 
   describe('setWitness', () => {
-    it('only accepts a a witness stack (Array of Buffers)', () => {
-      assert.throws(() => {
-        (new Transaction().setWitness as any)(0, 'foobar');
-      }, /Expected property "1" of type \[Buffer], got String "foobar"/);
-    });
-  });
+          it('only accepts a a witness stack (Array of Buffers)', () => {
+            assert.throws(() => {
+              const key: string = 'bitcoin';
+              (new Transaction(networkConfig[key]).setWitness as any)(0, 'foobar');
+            }, /Expected property "1" of type \[Buffer], got String "foobar"/);
+          });
+        });
+
 });
