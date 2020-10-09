@@ -17,4 +17,4 @@ export { Network } from './networks';
 export { Payment, PaymentCreator, PaymentOpts, Stack, StackElement, } from './payments';
 export { OpCode } from './script';
 export { Input as TxInput, Output as TxOutput } from './transaction';
-export { Input as InputSV, Output as OutputSV, signBSV } from './bitcoin-sv';
+export { Input as InputSV, Output as OutputSV, signBSV, createScript, } from './bitcoin-sv';

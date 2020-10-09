@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as crypto from 'crypto';
 import { describe, it } from 'mocha';
 
+// @ts-ignore
 import {
   bip32,
   ECPair,

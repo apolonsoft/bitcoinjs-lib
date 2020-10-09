@@ -1,4 +1,5 @@
 import { KeyValue, PsbtGlobalUpdate, PsbtInput, PsbtInputUpdate, PsbtOutput, PsbtOutputUpdate, TransactionInput, TransactionOutput } from 'bip174/src/lib/interfaces';
+import { Output as OutputBSV } from './bitcoin-sv';
 import { Signer, SignerAsync } from './ecpair';
 import { Network } from './networks';
 import { Transaction } from './transaction';
@@ -49,6 +50,29 @@ export declare class Psbt {
     static fromBase64(data: string, opts?: PsbtOptsOptional): Psbt;
     static fromHex(data: string, opts?: PsbtOptsOptional): Psbt;
     static fromBuffer(buffer: Buffer, opts?: PsbtOptsOptional): Psbt;
+    /**
+     * @description Sign Bitcoin SV/Bitcoin Cash transaction
+     * @param data Complete data for proceeding sign for Bitcoin SV/Bitcoin Cash
+     * @param {Array} data.inputs Contains UTXOs. Script field must be filled
+     *  with the result of createScript hex string (./bitcoin-sv.ts)
+     * @param {Array} data.outputs Contains outputs information.
+     * @param {number} data.sum The calculated transaction sum (include fee and spend money)
+     * @param {number} data.fee The fee amount
+     * @param {string} data.privateKeys The private keys represented as WIF string
+     * @return {string} The HEX string of raw transaction signature
+     */
+    static signToHex(data: {
+        inputs: Array<{
+            address: string;
+            amount: number;
+            txId: string;
+            script: string;
+        }>;
+        outputs: OutputBSV[];
+        sum: number;
+        fee: number;
+        privateKeys: string[];
+    }): string;
     data: any;
     private __CACHE;
     private opts;

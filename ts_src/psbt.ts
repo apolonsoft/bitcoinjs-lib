@@ -14,16 +14,19 @@ import {
   TransactionInput,
   TransactionOutput,
 } from 'bip174/src/lib/interfaces';
+
+// @ts-ignore
 import {checkForInput, checkForOutput} from 'bip174/src/lib/utils';
-import {fromOutputScript, toOutputScript} from './address';
-import {cloneBuffer, reverseBuffer} from './bufferutils';
-import {hash160} from './crypto';
+import { Address, PrivateKey } from 'bitcore-lib-cash';
+import { fromOutputScript, toOutputScript } from './address';
+import { Input as InputBSV, Output as OutputBSV, signBSV } from './bitcoin-sv';
+import { cloneBuffer, reverseBuffer } from './bufferutils';
+import { hash160 } from './crypto';
 import {fromPublicKey as ecPairFromPublicKey, Signer, SignerAsync} from './ecpair';
 import {Network, networkConfig} from './networks';
 import * as payments from './payments';
 import * as bscript from './script';
 import {Output, Transaction} from './transaction';
-
 const bip174_1 = require('bip174');
 
 export interface PsbtTxInput extends TransactionInput {
@@ -145,6 +148,43 @@ export class Psbt {
     return psbt;
   }
 
+  /**
+   * @description Sign Bitcoin SV/Bitcoin Cash transaction
+   * @param data Complete data for proceeding sign for Bitcoin SV/Bitcoin Cash
+   * @param {Array} data.inputs Contains UTXOs. Script field must be filled
+   *  with the result of createScript hex string (./bitcoin-sv.ts)
+   * @param {Array} data.outputs Contains outputs information.
+   * @param {number} data.sum The calculated transaction sum (include fee and spend money)
+   * @param {number} data.fee The fee amount
+   * @param {string} data.privateKeys The private keys represented as WIF string
+   * @return {string} The HEX string of raw transaction signature
+   */
+  static signToHex(data: {
+    inputs: Array<{
+      address: string;
+      amount: number;
+      txId: string;
+      script: string;
+    }>;
+    outputs: OutputBSV[];
+    sum: number;
+    fee: number;
+    privateKeys: string[]; // WIF
+  }): string {
+    const resultInputs: InputBSV[] = data.inputs.map((input, index) => ({
+      ...input,
+      index,
+      address: Address.fromString(input.address),
+    }));
+    return signBSV({
+      ...data,
+      inputs: resultInputs,
+      keyPairs: data.privateKeys.map(wif => ({
+        privateKey: PrivateKey.fromWIF(wif),
+      })),
+    });
+  }
+
   data: any;
 
   private __CACHE: PsbtCache;
@@ -165,8 +205,6 @@ export class Psbt {
     // set defaults
     this.opts = Object.assign({}, DEFAULT_OPTS, opts);
 
-
-
     this.__CACHE = {
       __NON_WITNESS_UTXO_TX_CACHE: [],
       __NON_WITNESS_UTXO_BUF_CACHE: [],
@@ -181,8 +219,6 @@ export class Psbt {
       // because it is not BIP174 compliant.
       __UNSAFE_SIGN_NONSEGWIT: false,
     };
-
-
 
     if (this.data.inputs.length === 0) this.setVersion(2);
 

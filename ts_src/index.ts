@@ -26,4 +26,9 @@ export {
 } from './payments';
 export { OpCode } from './script';
 export { Input as TxInput, Output as TxOutput } from './transaction';
-export { Input as InputSV, Output as OutputSV, signBSV } from './bitcoin-sv';
+export {
+  Input as InputSV,
+  Output as OutputSV,
+  signBSV,
+  createScript,
+} from './bitcoin-sv';
