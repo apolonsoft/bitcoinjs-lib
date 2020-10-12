@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { Address, Networks, PrivateKey, PublicKey } from 'bitcore-lib-cash';
 export interface Input {
     txId: string;

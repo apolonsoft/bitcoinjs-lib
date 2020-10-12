@@ -9,9 +9,14 @@
       "../src",
       "../types"
     ],
+    "typeRoots": [
+      "../node_modules/@types",
+      "../custom_types"
+    ],
     "types": [
       "node",
-      "mocha"
+      "mocha",
+      "bitcore-lib-cash"
     ],
     "allowJs": false,
     "resolveJsonModule": true,

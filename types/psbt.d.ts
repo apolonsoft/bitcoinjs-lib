@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { KeyValue, PsbtGlobalUpdate, PsbtInput, PsbtInputUpdate, PsbtOutput, PsbtOutputUpdate, TransactionInput, TransactionOutput } from 'bip174/src/lib/interfaces';
 import { Output as OutputBSV } from './bitcoin-sv';
 import { Signer, SignerAsync } from './ecpair';
@@ -42,11 +43,13 @@ export interface PsbtTxOutput extends TransactionOutput {
  *   Transaction object. Such as fee rate not being larger than maximumFeeRate etc.
  */
 export declare class Psbt {
-    readonly inputCount: number;
-    version: number;
-    locktime: number;
-    readonly txInputs: PsbtTxInput[];
-    readonly txOutputs: PsbtTxOutput[];
+    get inputCount(): number;
+    get version(): number;
+    set version(version: number);
+    get locktime(): number;
+    set locktime(locktime: number);
+    get txInputs(): PsbtTxInput[];
+    get txOutputs(): PsbtTxOutput[];
     static fromBase64(data: string, opts?: PsbtOptsOptional): Psbt;
     static fromHex(data: string, opts?: PsbtOptsOptional): Psbt;
     static fromBuffer(buffer: Buffer, opts?: PsbtOptsOptional): Psbt;

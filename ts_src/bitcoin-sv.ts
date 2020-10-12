@@ -1,4 +1,3 @@
-// @ts-ignore
 import {
   Address,
   Networks,
@@ -40,7 +39,7 @@ function convertInput(input: Input): Transaction.UnspentOutput {
 function convertOutput(
   output: Output,
 ): {
-  address: Buffer | Uint8Array | string;
+  address: string;
   satoshis: number;
   network?: Networks.Network;
 } {

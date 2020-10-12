@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { Network } from './networks';
 import { Transaction } from './transaction';
 export declare class Block {

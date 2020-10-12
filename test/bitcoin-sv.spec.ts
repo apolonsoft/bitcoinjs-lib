@@ -1,5 +1,4 @@
 import * as assert from 'assert';
-// @ts-ignore
 import { PrivateKey } from 'bitcore-lib-cash';
 import { createScript, Input, Output, signBSV } from '../src/bitcoin-sv';
 

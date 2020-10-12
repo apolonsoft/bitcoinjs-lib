@@ -6,8 +6,13 @@
     "declaration": true,
     "declarationDir": "./types",
     "rootDir": "./ts_src",
+    "typeRoots": [
+      "custom_types",
+      "node_modules/@types"
+    ],
     "types": [
-      "node"
+      "node",
+      "bitcore-lib-cash"
     ],
     "allowJs": false,
     "strict": true,
