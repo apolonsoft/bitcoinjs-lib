@@ -1,9 +1,10 @@
 import * as assert from 'assert';
 import { describe, it } from 'mocha';
 import * as bitcoin from '../..';
+import { networkConfig } from '../../types/networks';
 import { regtestUtils } from './_regtest';
 const dhttp = regtestUtils.dhttp;
-const TESTNET = bitcoin.networks.testnet;
+const TESTNET = networkConfig.testnet;
 
 describe('bitcoinjs-lib (addresses)', () => {
   it(
@@ -128,6 +129,8 @@ describe('bitcoinjs-lib (addresses)', () => {
       pubKeyHash: 0x30,
       scriptHash: 0x32,
       wif: 0xb0,
+      dustThreshold: 0,
+      timeInTransaction: true,
     };
 
     const keyPair = bitcoin.ECPair.makeRandom({ network: LITECOIN });

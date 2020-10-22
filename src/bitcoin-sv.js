@@ -71,15 +71,24 @@ function createScript(data, threshold) {
   return script.toHex();
 }
 exports.createScript = createScript;
+function fromDecimals(num) {
+  return parseInt(JSON.stringify(num).split('.')[1], 10);
+}
 function signBSV(data) {
+  const sumInSatoshis = Number.isInteger(data.sum)
+    ? data.sum
+    : fromDecimals(data.sum);
+  const feeInSatoshis = Number.isInteger(data.fee)
+    ? data.fee
+    : fromDecimals(data.fee);
   const utxos = data.inputs.map(convertInput);
   const addresses = data.outputs.map(convertOutput);
   const { privateKeys } = getKeysAsArrays(data.keyPairs);
   const transaction = new bitcore_lib_cash_1.Transaction();
   transaction
     .from(utxos)
-    .to(addresses, data.sum)
-    .fee(data.fee)
+    .to(addresses, sumInSatoshis)
+    .fee(feeInSatoshis)
     .sign(privateKeys);
   return transaction.serialize();
 }

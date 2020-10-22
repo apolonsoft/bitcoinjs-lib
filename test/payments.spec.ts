@@ -20,7 +20,6 @@ import * as u from './payments.utils';
         u.equate(actual, f.expected, f.arguments);
       });
 
-
       it(f.description + ' as expected (no validation)', () => {
         const args = u.preform(f.arguments);
         const actual = fn(
@@ -32,10 +31,7 @@ import * as u from './payments.utils';
 
         u.equate(actual, f.expected, f.arguments);
       });
-
-
     });
-
 
     fixtures.invalid.forEach((f: any) => {
       it(
@@ -111,7 +107,5 @@ import * as u from './payments.utils';
         });
       }
     });
-
-
   });
 });

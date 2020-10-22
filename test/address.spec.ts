@@ -24,7 +24,6 @@ const NETWORKS = Object.assign(
 );
 
 describe('address', () => {
-
   describe('fromBase58Check', () => {
     fixtures.standard.forEach(f => {
       if (!f.base58check) return;
@@ -66,7 +65,6 @@ describe('address', () => {
       });
     });
   });
-
 
   describe('fromOutputScript', () => {
     fixtures.standard.forEach(f => {
@@ -149,5 +147,4 @@ describe('address', () => {
       });
     });
   });
-
 });

@@ -1,5 +1,5 @@
 import * as bcrypto from '../crypto';
-import {networkConfig} from '../networks';
+import { networkConfig } from '../networks';
 
 import * as bscript from '../script';
 import {
@@ -30,7 +30,7 @@ function stacksEqual(a: Buffer[], b: Buffer[]): boolean {
 export function p2sh(a: Payment, opts?: PaymentOpts): Payment {
   if (!a.address && !a.hash && !a.output && !a.redeem && !a.input)
     throw new TypeError('Not enough data');
-  opts = Object.assign({validate: true}, opts || {});
+  opts = Object.assign({ validate: true }, opts || {});
 
   typef(
     {
@@ -57,13 +57,13 @@ export function p2sh(a: Payment, opts?: PaymentOpts): Payment {
     network = (a.redeem && a.redeem.network) || networkConfig.bitcoin;
   }
 
-  const o: Payment = {network};
+  const o: Payment = { network };
 
   const _address = lazy.value(() => {
     const payload = bs58check.decode(a.address);
     const version = payload.readUInt8(0);
     const hash = payload.slice(1);
-    return {version, hash};
+    return { version, hash };
   });
   const _chunks = lazy.value(() => {
     return bscript.decompile(a.input!);

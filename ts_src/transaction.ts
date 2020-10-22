@@ -1,8 +1,8 @@
-import {BufferReader, BufferWriter, reverseBuffer} from './bufferutils';
+import { BufferReader, BufferWriter, reverseBuffer } from './bufferutils';
 import * as bcrypto from './crypto';
-import {Network, networkConfig} from './networks';
+import { Network, networkConfig } from './networks';
 import * as bscript from './script';
-import {OPS as opcodes} from './script';
+import { OPS as opcodes } from './script';
 import * as types from './types';
 
 const typeforce = require('typeforce');
@@ -67,12 +67,17 @@ export class Transaction {
   static readonly ADVANCED_TRANSACTION_MARKER = 0x00;
   static readonly ADVANCED_TRANSACTION_FLAG = 0x01;
 
-  static fromBuffer(buffer: Buffer, network: Network, _NO_STRICT?: boolean): Transaction {
+  static fromBuffer(
+    buffer: Buffer,
+    network: Network,
+    _NO_STRICT?: boolean,
+  ): Transaction {
     const bufferReader = new BufferReader(buffer);
     network = network || networkConfig.bitcoin;
     const tx = new Transaction(network);
     tx.version = bufferReader.readInt32();
-    if (network.timeInTransaction && buffer.length !== 10) tx.time = bufferReader.readUInt32();
+    if (network.timeInTransaction && buffer.length !== 10)
+      tx.time = bufferReader.readUInt32();
 
     const marker = bufferReader.readUInt8();
     const flag = bufferReader.readUInt8();
@@ -220,7 +225,8 @@ export class Transaction {
     const hasWitnesses = _ALLOW_WITNESS && this.hasWitnesses();
 
     if (this.network.timeInTransaction) {
-      return (12 +
+      return (
+        12 +
         varuint.encodingLength(this.ins.length) +
         varuint.encodingLength(this.outs.length) +
         this.ins.reduce((sum, input) => {
@@ -231,12 +237,13 @@ export class Transaction {
         }, 0) +
         (hasWitnesses
           ? this.ins.reduce((sum, input) => {
-            return sum + vectorSize(input.witness);
-          }, 0)
+              return sum + vectorSize(input.witness);
+            }, 0)
           : 0)
       );
     }
-    return (hasWitnesses ? 10 : 8) +
+    return (
+      (hasWitnesses ? 10 : 8) +
       varuint.encodingLength(this.ins.length) +
       varuint.encodingLength(this.outs.length) +
       this.ins.reduce((sum, input) => {
@@ -247,9 +254,10 @@ export class Transaction {
       }, 0) +
       (hasWitnesses
         ? this.ins.reduce((sum, input) => {
-          return sum + vectorSize(input.witness);
-        }, 0)
-        : 0);
+            return sum + vectorSize(input.witness);
+          }, 0)
+        : 0)
+    );
   }
 
   clone(): Transaction {

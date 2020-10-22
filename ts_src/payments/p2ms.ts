@@ -1,5 +1,4 @@
-
-import {networkConfig} from '../networks';
+import { networkConfig } from '../networks';
 import * as bscript from '../script';
 import { Payment, PaymentOpts, Stack } from './index';
 import * as lazy from './lazy';

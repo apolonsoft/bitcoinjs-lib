@@ -1,4 +1,4 @@
-import {Network, networkConfig} from './networks';
+import { Network, networkConfig } from './networks';
 import * as payments from './payments';
 import * as bscript from './script';
 import * as types from './types';

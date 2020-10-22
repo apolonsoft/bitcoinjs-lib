@@ -1,5 +1,5 @@
 import * as t from 'assert';
-import {NetworkConfig, networkConfig} from '../src/networks';
+import { NetworkConfig, networkConfig } from '../src/networks';
 import * as bscript from '../src/script';
 
 function tryHex(x: Buffer | Buffer[]): string | string[] {
@@ -71,8 +71,8 @@ export function equate(a: any, b: any, args?: any): void {
   equateBase(a, b, '');
   if (b.redeem) equateBase(a.redeem, b.redeem, 'redeem.');
   if (b.network) {
-    const key: (keyof NetworkConfig) = a.network || 'bitcoin';
-    const key2: (keyof NetworkConfig) = b.network || 'bitcoin';
+    const key: keyof NetworkConfig = a.network || 'bitcoin';
+    const key2: keyof NetworkConfig = b.network || 'bitcoin';
 
     t.deepStrictEqual(
       networkConfig[key],
@@ -116,7 +116,7 @@ export function preform(x: any): any {
   x = Object.assign({}, x);
 
   if (x.network) {
-    const key: (keyof NetworkConfig) = x.network || 'bitcoin';
+    const key: keyof NetworkConfig = x.network || 'bitcoin';
     x.network = networkConfig[key];
   }
   if (typeof x.inputHex === 'string') {
@@ -148,8 +148,8 @@ export function preform(x: any): any {
       x.redeem.output = asmToBuffer(x.redeem.output);
     if (Array.isArray(x.redeem.witness))
       x.redeem.witness = x.redeem.witness.map(fromHex);
-    if (x.redeem.network){
-      const key: (keyof NetworkConfig) = x.redeem.network || 'bitcoin';
+    if (x.redeem.network) {
+      const key: keyof NetworkConfig = x.redeem.network || 'bitcoin';
       x.redeem.network = networkConfig[key];
     }
   }

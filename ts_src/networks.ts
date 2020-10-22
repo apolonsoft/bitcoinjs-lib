@@ -16,7 +16,7 @@ interface Bip32 {
   private: number;
 }
 
-export interface NetworkConfig  {
+export interface NetworkConfig {
   bitcoin: Network;
   testnet: Network;
   dogcoin: Network;

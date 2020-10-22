@@ -1,7 +1,6 @@
-
 import { BufferReader, BufferWriter, reverseBuffer } from './bufferutils';
 import * as bcrypto from './crypto';
-import {Network} from './networks';
+import { Network } from './networks';
 
 import { Transaction } from './transaction';
 import * as types from './types';
@@ -51,7 +50,6 @@ export class Block {
       block.transactions.push(tx);
     }
 
-
     block.blockSig = undefined;
     if (bufferReader.offset < buffer.length) {
       const blockSigSize = bufferReader.readVarInt();
@@ -100,7 +98,7 @@ export class Block {
   }
 
   version: number = 1;
-  blockSig?: Buffer  =  undefined;
+  blockSig?: Buffer = undefined;
   prevHash?: Buffer = undefined;
   merkleRoot?: Buffer = undefined;
   timestamp: number = 0;

@@ -108,6 +108,10 @@ export function createScript(
   return script.toHex();
 }
 
+function fromDecimals(num: number): number {
+  return parseInt(JSON.stringify(num).split('.')[1], 10);
+}
+
 export function signBSV(data: {
   inputs: Input[];
   outputs: Output[];
@@ -115,14 +119,16 @@ export function signBSV(data: {
   fee: number;
   keyPairs: KeyPair[];
 }): string {
+  const sumInSatoshis = Number.isInteger(data.sum) ? data.sum : fromDecimals(data.sum);
+  const feeInSatoshis = Number.isInteger(data.fee) ? data.fee : fromDecimals(data.fee);
   const utxos = data.inputs.map(convertInput);
   const addresses = data.outputs.map(convertOutput);
   const { privateKeys } = getKeysAsArrays(data.keyPairs);
   const transaction = new Transaction();
   transaction
     .from(utxos)
-    .to(addresses, data.sum)
-    .fee(data.fee)
+    .to(addresses, sumInSatoshis)
+    .fee(feeInSatoshis)
     .sign(privateKeys);
   return transaction.serialize();
 }

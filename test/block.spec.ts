@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { beforeEach, describe, it } from 'mocha';
 import { Block } from '..';
-import {NetworkConfig, networkConfig} from '../src/networks';
+import { NetworkConfig, networkConfig } from '../src/networks';
 
 import * as fixtures from './fixtures/block.json';
 
@@ -32,57 +32,57 @@ describe('Block', () => {
     });
   });
 
-    describe('fromBuffer/fromHex', () => {
-      fixtures.valid.forEach(f => {
-        it('imports ' + f.description, () => {
-          const key: (keyof NetworkConfig) = f.network || 'bitcoin';
-          const block = Block.fromHex(f.hex,networkConfig[key]);
+  describe('fromBuffer/fromHex', () => {
+    fixtures.valid.forEach(f => {
+      it('imports ' + f.description, () => {
+        const key: keyof NetworkConfig = f.network || 'bitcoin';
+        const block = Block.fromHex(f.hex, networkConfig[key]);
 
-          assert.strictEqual(block.version, f.version);
-          assert.strictEqual(block.prevHash!.toString('hex'), f.prevHash);
-          assert.strictEqual(block.merkleRoot!.toString('hex'), f.merkleRoot);
-          if (block.witnessCommit) {
-            assert.strictEqual(
-              block.witnessCommit.toString('hex'),
-              f.witnessCommit,
-            );
-          }
-          assert.strictEqual(block.timestamp, f.timestamp);
-          assert.strictEqual(block.bits, f.bits);
-          assert.strictEqual(block.nonce, f.nonce);
-          assert.strictEqual(!block.transactions, f.hex.length === 160);
-          if (f.size && f.strippedSize && f.weight) {
-            assert.strictEqual(block.byteLength(false, true), f.size);
-            assert.strictEqual(block.byteLength(false, false), f.strippedSize);
-            assert.strictEqual(block.weight(), f.weight);
-          }
-        });
-      });
-
-      fixtures.invalid.forEach(f => {
-        it('throws on ' + f.exception, () => {
-          const key: (keyof NetworkConfig) = f.network || 'bitcoin';
-          assert.throws(() => {
-            Block.fromHex(f.hex, networkConfig[key]);
-          }, new RegExp(f.exception));
-        });
+        assert.strictEqual(block.version, f.version);
+        assert.strictEqual(block.prevHash!.toString('hex'), f.prevHash);
+        assert.strictEqual(block.merkleRoot!.toString('hex'), f.merkleRoot);
+        if (block.witnessCommit) {
+          assert.strictEqual(
+            block.witnessCommit.toString('hex'),
+            f.witnessCommit,
+          );
+        }
+        assert.strictEqual(block.timestamp, f.timestamp);
+        assert.strictEqual(block.bits, f.bits);
+        assert.strictEqual(block.nonce, f.nonce);
+        assert.strictEqual(!block.transactions, f.hex.length === 160);
+        if (f.size && f.strippedSize && f.weight) {
+          assert.strictEqual(block.byteLength(false, true), f.size);
+          assert.strictEqual(block.byteLength(false, false), f.strippedSize);
+          assert.strictEqual(block.weight(), f.weight);
+        }
       });
     });
 
-    describe('toBuffer/toHex', () => {
-      fixtures.valid.forEach(f => {
-        let block: Block;
-        beforeEach(() => {
-          const key: (keyof NetworkConfig) = f.network || 'bitcoin';
-          block = Block.fromHex(f.hex, networkConfig[key]);
-        });
-
-        it('exports ' + f.description, () => {
-          //assert.strictEqual(block.toHex(true), f.hex.slice(0, 160));
-          assert.strictEqual(block.toHex(), f.hex);
-        });
+    fixtures.invalid.forEach(f => {
+      it('throws on ' + f.exception, () => {
+        const key: keyof NetworkConfig = f.network || 'bitcoin';
+        assert.throws(() => {
+          Block.fromHex(f.hex, networkConfig[key]);
+        }, new RegExp(f.exception));
       });
     });
+  });
+
+  describe('toBuffer/toHex', () => {
+    fixtures.valid.forEach(f => {
+      let block: Block;
+      beforeEach(() => {
+        const key: keyof NetworkConfig = f.network || 'bitcoin';
+        block = Block.fromHex(f.hex, networkConfig[key]);
+      });
+
+      it('exports ' + f.description, () => {
+        //assert.strictEqual(block.toHex(true), f.hex.slice(0, 160));
+        assert.strictEqual(block.toHex(), f.hex);
+      });
+    });
+  });
   /*
     describe('getHash/getId', () => {
       fixtures.valid.forEach(f => {

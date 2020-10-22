@@ -14,6 +14,7 @@ const networks_1 = require('./networks');
 const payments = require('./payments');
 const bscript = require('./script');
 const transaction_1 = require('./transaction');
+// tslint:disable-next-line:variable-name
 const bip174_1 = require('bip174');
 /**
  * These are the default arguments for a Psbt instance.
@@ -789,6 +790,7 @@ function check32Bit(num) {
     throw new Error('Invalid 32 bit integer');
   }
 }
+// tslint:disable-next-line:typedef
 function checkFees(psbt, cache, opts) {
   const feeRate = cache.__FEE_RATE || psbt.getFeeRate();
   const vsize = cache.__EXTRACTED_TX.virtualSize();

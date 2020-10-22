@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as base58 from 'bs58';
 import { describe, it } from 'mocha';
 import * as bitcoin from '..';
-import {networkConfig} from '../src/networks';
+import { networkConfig } from '../src/networks';
 import * as base58EncodeDecode from './fixtures/core/base58_encode_decode.json';
 import * as base58KeysInvalid from './fixtures/core/base58_keys_invalid.json';
 import * as base58KeysValid from './fixtures/core/base58_keys_valid.json';
@@ -116,10 +116,7 @@ describe('Bitcoin-core', () => {
 
   // base58KeysInvalid
   describe('ECPair.fromWIF', () => {
-    const allowedNetworks = [
-      networkConfig.bitcoin,
-      networkConfig.testnet,
-    ];
+    const allowedNetworks = [networkConfig.bitcoin, networkConfig.testnet];
 
     base58KeysInvalid.forEach(f => {
       const strng = f[0];
