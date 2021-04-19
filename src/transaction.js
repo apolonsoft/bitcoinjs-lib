@@ -41,7 +41,7 @@ function isOutput(out) {
 }
 class Transaction {
   constructor(network) {
-    this.time = 0;
+    this.time = network && network.bech32 === 'emc' ? Math.floor((new Date().getTime()) / 1000) + 300 : 0;
     this.version = 1;
     this.locktime = 0;
     this.ins = [];
